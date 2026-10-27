@@ -264,6 +264,32 @@ Each proposal is described and scored:
 - apply the optional template blend;
 - reject if the final score is below the threshold.
 
+### Weighted boxes fusion
+
+Dense sliding windows produce many shifted copies of the same object. Raw
+proposals are clustered per class by IoU with a fused box (threshold **0.1**);
+each cluster is replaced by the score-weighted average of its member boxes and
+the mean member score. Only then is non-maximum suppression applied:
+
+```text
+fused.x = sum(score_i * x_i) / sum(score_i)
+fused.score = mean(score_i)
+```
+
+This turned eight-ish duplicate detections per object into one box on the
+synthetic regression fixtures, and it is covered by the precision assertion in
+`tests/unit/autolabel.test.ts`.
+
+### Box-size calibration
+
+The classifier slightly prefers tight windows that sit inside an object, so
+predicted boxes are systematically smaller than ground truth. During
+cross-validation, every ground-truth box is matched to its best prediction
+(IoU >= 0.3) and the median ratio `gt.width / predicted.width` (same for
+height) is stored in the bundle as `boxScale`, clamped to **0.6–2.0**. Inference
+expands each fused box around its center before mapping back to source pixels.
+Calibration is learned, not hardcoded.
+
 ### Non-maximum suppression
 
 NMS is greedy and **per class**:

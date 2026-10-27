@@ -399,3 +399,18 @@ layer and verified in end-to-end tests.
 - [Roadmap](ROADMAP.md)
 - [Contributing](../CONTRIBUTING.md)
 - [Security policy](../SECURITY.md)
+## Platform boundary: browser, PWA, and optional desktop shell
+
+The renderer is plain TypeScript plus DOM APIs; nothing imports Node built-ins.
+That keeps three deployment shapes possible without duplicating logic:
+
+1. **Static site / PWA** (shipped): `vite build`, service worker precache, IndexedDB.
+2. **Folder mode** (progressive enhancement): `src/core/fs-access.ts` reads a
+   directory the user picks and writes exports back with the File System Access
+   API. It returns `supported: false` instead of throwing elsewhere, so Firefox
+   and Safari keep the upload/download flow.
+3. **Desktop shell** (roadmap): a Tauri wrapper can call the same modules; the
+   canvas, workers, and exporters have no framework coupling beyond React.
+
+Native-only capabilities are always optional: no feature requires filesystem
+access, a server, or a GPU.
