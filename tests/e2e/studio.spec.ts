@@ -72,3 +72,22 @@ test('keyboard-only annotation creation and undo', async ({ page }) => {
   await page.keyboard.press('Control+z');
   await expect(page.getByRole('status').first()).toBeAttached();
 });
+test('mobile layout exposes panels through accessible dialogs', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await loadDemo(page);
+  await expect(page.getByRole('application')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Images', exact: true }).click();
+  const imagesDialog = page.getByRole('dialog');
+  await expect(imagesDialog).toBeVisible();
+  await expect(imagesDialog.getByRole('heading', { name: /Images \(\d+\)/ })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(imagesDialog).toBeHidden();
+
+  await page.getByRole('button', { name: 'Inspector' }).click();
+  const inspectorDialog = page.getByRole('dialog');
+  await expect(inspectorDialog.getByRole('tab', { name: 'Auto Label' })).toBeVisible();
+
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
+});
