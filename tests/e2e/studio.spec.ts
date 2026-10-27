@@ -72,6 +72,22 @@ test('keyboard-only annotation creation and undo', async ({ page }) => {
   await page.keyboard.press('Control+z');
   await expect(page.getByRole('status').first()).toBeAttached();
 });
+test('switching images keeps the canvas mounted', async ({ page }) => {
+  await loadDemo(page);
+  await page.getByRole('tab', { name: 'Images', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Similar images' })).toBeVisible();
+  const similar = page.locator('aside button[title^="Similarity"]');
+  await expect(similar.first()).toBeVisible();
+  await similar.first().click();
+  await expect(page.getByRole('application')).toBeVisible({ timeout: 15_000 });
+
+  const options = page.getByRole('button', { name: /annotations?$/ });
+  if ((await options.count()) > 1) {
+    await options.nth(1).click();
+    await expect(page.getByRole('application')).toBeVisible({ timeout: 15_000 });
+  }
+});
+
 test('mobile layout exposes panels through accessible dialogs', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await loadDemo(page);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getImageBlob, getImageThumb } from '@/core/repo';
 
 /** Loads (and revokes) an object URL for one image thumbnail. */
@@ -28,16 +28,17 @@ export function useImageBitmap(imageId: string | null): { bitmap: ImageBitmap | 
     loading: Boolean(imageId),
     error: null,
   });
+  const previous = useRef<ImageBitmap | null>(null);
+
   useEffect(() => {
     let cancelled = false;
-    let loaded: ImageBitmap | null = null;
     setState({ bitmap: null, loading: Boolean(imageId), error: null });
     if (!imageId) return () => {};
     void (async () => {
       try {
         const blob = await getImageBlob(imageId);
         if (!blob) throw new Error('Image data missing');
-        loaded = await createImageBitmap(blob);
+        const loaded = await createImageBitmap(blob);
         if (cancelled) {
           loaded.close();
           return;
@@ -51,8 +52,17 @@ export function useImageBitmap(imageId: string | null): { bitmap: ImageBitmap | 
     })();
     return () => {
       cancelled = true;
-      loaded?.close();
     };
   }, [imageId]);
+
+  // Close the superseded bitmap only after React stopped rendering it. Closing
+  // inside the image effect's cleanup races the canvas draw and throws
+  // "The image source is detached".
+  useEffect(() => {
+    const current = state.bitmap;
+    if (previous.current && previous.current !== current) previous.current.close();
+    previous.current = current;
+  }, [state.bitmap]);
+
   return state;
 }

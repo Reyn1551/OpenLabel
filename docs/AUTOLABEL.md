@@ -330,6 +330,15 @@ threshold are dropped.
 
 ### Instance segmentation
 
+Polygons come from a GrabCut-lite pass (`src/autolabel/mask.ts`): the box is
+downscaled to at most 192 px, foreground and border colour means seed a
+two-class split, holes are filled, the largest 4-connected component is kept,
+and its outline is traced with **marching squares** on a 1 px-padded mask. The
+largest closed loop is simplified with Ramer–Douglas–Peucker. When foreground
+and border colours are too close (distance < 24 in RGB), the box corners are
+returned instead of a meaningless mask.
+
+
 The detector still works on boxes. For each predicted box, `refineBoxToPolygon`
 runs on the **working-resolution** RGBA image:
 
