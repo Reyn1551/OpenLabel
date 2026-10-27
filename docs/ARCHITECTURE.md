@@ -270,6 +270,29 @@ than silently drop labels. See
 
 ---
 
+## Collaboration
+
+Team work is replicated, not hosted. Each project has an operation log in its
+own IndexedDB database (`openlabel-collab`), and every replicated fact is keyed
+by content: images by the SHA-256 of their bytes, classes by normalized name.
+Operations carry Lamport stamps and merge by last-writer-wins, so replicas
+converge regardless of the order they receive updates in.
+
+Two transports share one frame format: a per-project `BroadcastChannel` for tabs
+in the same browser profile, and a manual-signaling `RTCPeerConnection` with no
+ICE servers for a device on the local network. Every connected replica
+announces its version vector every two seconds, which lets any peer relay what
+it has to a peer that is missing it — a star around the dataset owner is enough
+for a five-person team. No image bytes are transferred and nothing is uploaded.
+
+The studio bridge mirrors local edits into the log and writes merged remote state
+back to IndexedDB and the live Zustand store; the Team page renders pairing,
+presence, and the claim board from the same materialized state. See
+[docs/COLLABORATION.md](COLLABORATION.md) for the algorithm, conflict table, and
+limits.
+
+---
+
 ## Worker protocol
 
 Requests and responses are discriminated unions in

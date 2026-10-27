@@ -15,6 +15,9 @@ inference reconstructs typed arrays and maps from the bundle.
 
 - **CPU only.** No GPU, WebGPU, ONNX runtime, downloaded weights, or external
   inference service.
+- **Two implementations, one behaviour.** The pixel-bound stage exists as a
+  TypeScript reference and as a Rust/WebAssembly module (see
+  [ENGINE.md](ENGINE.md)); the parity suite fails if they disagree.
 - **Deterministic.** Given the same images, annotations, settings, and code
   version, training is reproducible. The PRNG is `mulberry32`; seeds are fixed
   per stage.
@@ -81,9 +84,14 @@ gx = (L(x + 1, y) - L(x - 1, y)) * 0.5
 gy = (L(x, y + 1) - L(x, y - 1)) * 0.5
 ```
 
-The orientation is folded into `[0, π)` (`if angle < 0: angle += π`) and
-quantized into 8 bins. Unsigned orientation keeps descriptors stable under
-horizontal flips and 180° rotations.
+The orientation is folded into `[0, π)` and quantized into 8 bins. Unsigned
+orientation keeps descriptors stable under horizontal flips and 180° rotations.
+
+The bin is chosen by comparing `gy / gx` against `tan(k·π/8)` rather than
+computing `atan2`: the angle is only ever used to pick a bucket, and `atan2` has
+no WebAssembly instruction, so it dominated the pixel pass. The two formulations
+agree on every gradient; `tests/unit/engine-parity.test.ts` pins the bins and
+descriptors between the TypeScript reference and the compiled engine.
 
 For each plane, a summed-area table is built once. Any rectangular cell range
 then costs four lookups, so descriptor extraction is O(1) per proposal
