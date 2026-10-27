@@ -1,6 +1,6 @@
 import { useStudio } from '@/core/store';
-import { replaceImageAnnotations } from '@/core/repo';
-import type { Annotation, Geometry, ImageMeta } from '@/core/types';
+import { getProject, listAnnotations, listImages, replaceImageAnnotations } from '@/core/repo';
+import type { Annotation, Geometry, ImageMeta, Project } from '@/core/types';
 import { materialize, type CollabState } from './state';
 import type { CollabSession } from './session';
 import {
@@ -101,18 +101,26 @@ export function startStudioBridge(session: CollabSession): StudioBridge {
   let applying = false;
   let lastApplied: CollabState | null = null;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let seeded = false;
 
   const makeOp = (kind: Op['k'], build: (stamp: Stamp, oid: string) => Op): Op => {
     const stamp = session.nextStamp();
     return build(stamp, `${stamp.p}:${stamp.t}:${kind}`);
   };
 
-  const syncLocal = () => {
-    if (applying) return;
-    const state = useStudio.getState();
-    const project = state.project;
-    if (!project || project.id !== projectId) return;
-
+  /**
+   * Emits operations for the difference between the given project snapshot and
+   * what was already broadcast.
+   *
+   * Both sources feed this: the live studio store while annotating, and
+   * IndexedDB when the session starts on a route that never mounted the studio
+   * (opening Team first is a normal flow).
+   */
+  const emitState = (
+    project: Project,
+    images: ImageMeta[],
+    listFor: (imageId: string) => Annotation[] | undefined,
+  ): Op[] => {
     const ops: Op[] = [];
     const keyById = new Map<string, string>();
     for (const cls of project.classes) {
@@ -131,7 +139,7 @@ export function startStudioBridge(session: CollabSession): StudioBridge {
       );
     }
 
-    for (const image of state.images) {
+    for (const image of images) {
       if (image.projectId !== projectId) continue;
       if (lastImage.has(image.hash)) continue;
       lastImage.add(image.hash);
@@ -154,9 +162,9 @@ export function startStudioBridge(session: CollabSession): StudioBridge {
       );
     }
 
-    for (const image of state.images) {
+    for (const image of images) {
       if (image.projectId !== projectId) continue;
-      const list = state.annotations[image.id] ?? [];
+      const list = listFor(image.id) ?? [];
       if (lastList.get(image.id) === list) continue;
       const previous = lastAnn.get(image.id) ?? new Map<string, number>();
       const next = new Map<string, number>();
@@ -180,19 +188,57 @@ export function startStudioBridge(session: CollabSession): StudioBridge {
       lastAnn.set(image.id, next);
       lastList.set(image.id, list);
     }
+    return ops;
+  };
 
+  const submit = (ops: Op[]) => {
     for (let index = 0; index < ops.length; index += SUBMIT_CHUNK) {
       session.submit(ops.slice(index, index + SUBMIT_CHUNK));
     }
   };
 
-  const schedule = () => {
+  const syncLocal = () => {
+    if (applying || !seeded) return;
+    const state = useStudio.getState();
+    const project = state.project;
+    if (!project || project.id !== projectId) return;
+    submit(emitState(project, state.images, (imageId) => state.annotations[imageId] ?? []));
+  };
+
+  /**
+   * Seeds the session from IndexedDB once, so a project that was never opened in
+   * the studio still reaches peers.
+   */
+  const seedFromDatabase = async () => {
+    try {
+      const [project, images, annotations] = await Promise.all([
+        getProject(projectId),
+        listImages(projectId),
+        listAnnotations(projectId),
+      ]);
+      if (!project) return;
+      const byImage = new Map<string, Annotation[]>();
+      for (const annotation of annotations) {
+        const list = byImage.get(annotation.imageId);
+        if (list) list.push(annotation);
+        else byImage.set(annotation.imageId, [annotation]);
+      }
+      submit(emitState(project, images, (imageId) => byImage.get(imageId) ?? []));
+    } catch {
+      // Seeding is best effort; the studio still seeds once it is opened.
+    } finally {
+      seeded = true;
+      schedule();
+    }
+  };
+
+  function schedule(): void {
     if (timer) return;
     timer = setTimeout(() => {
       timer = undefined;
       syncLocal();
     }, 0);
-  };
+  }
 
   /** Writes the merged view back into IndexedDB and the live studio state. */
   const applyRemote = (state: CollabState) => {
@@ -233,7 +279,7 @@ export function startStudioBridge(session: CollabSession): StudioBridge {
 
   const unsubscribeStudio = useStudio.subscribe(schedule);
   const unsubscribeSession = session.subscribe((snapshot) => applyRemote(snapshot.state));
-  schedule();
+  void seedFromDatabase();
 
   return {
     stop: () => {

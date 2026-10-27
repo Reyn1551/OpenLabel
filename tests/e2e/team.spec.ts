@@ -45,3 +45,26 @@ test('two tabs pair and split the work', async ({ context, page }) => {
 
   await second.close();
 });
+test('team page seeds a project the studio never finished loading', async ({ context, page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Load demo dataset' }).first().click();
+  await page.waitForURL(/\/projects\/[^/]+\/annotate$/, { timeout: 90_000 });
+
+  // Leave before the studio has painted: the session must seed from IndexedDB,
+  // not from the studio store.
+  const projectUrl = page.url().replace(/\/annotate$/, '');
+  await page.goto(`${projectUrl}/team`);
+  await expect(
+    page.getByText('Unassigned').locator('..').getByText('16', { exact: true }),
+  ).toBeVisible({ timeout: 30_000 });
+
+  const second = await context.newPage();
+  await second.goto(`${projectUrl}/team`);
+  await expect(
+    second.getByText('Unassigned').locator('..').getByText('16', { exact: true }),
+  ).toBeVisible({ timeout: 30_000 });
+
+  await second.getByRole('button', { name: /Claim next 10/ }).click();
+  await expect(page.getByText(/· 10$/).first()).toBeVisible({ timeout: 20_000 });
+  await second.close();
+});
