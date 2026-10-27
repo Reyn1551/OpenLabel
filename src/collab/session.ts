@@ -13,6 +13,16 @@ import type { Transport } from './transport';
 /** Operations per frame when a peer catches up; keeps WebRTC frames small. */
 export const BACKFILL_CHUNK = 200;
 
+/**
+ * How often a connected replica announces its version vector.
+ *
+ * Direct links only deliver what their two endpoints know. The periodic
+ * announcement lets any peer relay what it has seen to a peer that is still
+ * missing it, so five annotators do not need a full mesh — a star around whoever
+ * has the invite codes is enough. Empty announcements are a few bytes.
+ */
+export const HEARTBEAT_MS = 2000;
+
 export interface SessionSnapshot {
   state: CollabState;
   peers: PeerId[];
@@ -33,6 +43,7 @@ export class CollabSession {
   /** Membership index for the log; keeps dedupe O(1) at 50k+ operations. */
   private readonly seen = new Set<string>();
   private transport: Transport | null = null;
+  private heartbeat: ReturnType<typeof setInterval> | undefined;
 
   private constructor(
     readonly projectId: string,
@@ -76,9 +87,14 @@ export class CollabSession {
     this.transport = transport;
     // Announce our version vector; the peer replies with whatever we are missing.
     transport.send([], versionVector(this.state));
+    this.heartbeat = setInterval(() => {
+      transport.send([], versionVector(this.state));
+    }, HEARTBEAT_MS);
   }
 
   detach(): void {
+    clearInterval(this.heartbeat);
+    this.heartbeat = undefined;
     this.transport?.close();
     this.transport = null;
   }

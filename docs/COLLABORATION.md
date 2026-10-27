@@ -82,8 +82,16 @@ Two transports implement the same frame format `{v, from, ops, vv}`:
    server. Frames are capped at 1 MiB and backfill is chunked to 200 operations
    per frame.
 
-Both are attached through a fan-out transport, so a session can serve tabs and a
-paired device at once.
+Both are attached through a fan-out transport, so a session can serve tabs and
+several paired devices at once.
+
+Direct links only exchange what their two endpoints know, so every replica
+announces its version vector every two seconds. Any peer that has seen an
+operation relays it to a peer that is still missing it. Five annotators
+therefore do not need a full mesh: pairing every device with one hub is enough,
+and the hub forwards claims and annotations without any of them being uploaded
+anywhere. The announcement is a handful of bytes; a reply only happens when
+something is actually missing.
 
 ### What pairing exposes
 
@@ -111,9 +119,10 @@ the board shows per-person counts on every replica.
 - No image transfer, by design.
 - No merge UI for conflicting edits: the newer edit wins. (A per-annotation
   history view is a roadmap item.)
-- Pairing is one-to-one per code; for five people, pair each device once, or
-  distribute pixels and let the same-profile transport handle tabs. A relay-free
-  mesh is intentionally out of scope for now.
+- Pairing is one-to-one per code. For five people, pair each device with the
+  person who holds the dataset (a star); relaying through that peer is automatic.
+- Image bits are not relayed: only metadata, annotations, claims, and review
+  state are.
 - Deletions are tombstones and are never garbage-collected, so the log only
   grows. At the current operation size this is a few kilobytes per thousand
   operations.
