@@ -1,0 +1,106 @@
+name: Bug report
+description: Report a reproducible defect in OpenLabel.
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping make OpenLabel better. Please search existing issues
+        first, and do not paste private images, labels, or dataset contents into
+        this report.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Preflight
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: This report does not disclose a security vulnerability.
+          required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: A clear, factual description of the defect.
+      placeholder: Training finishes, but the model card shows 0 evaluated annotations.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include the smallest dataset and sequence that triggers the problem.
+      placeholder: |
+        1. Create an object-detection project with two classes.
+        2. Import five images and draw one box per image.
+        3. Open Auto-label and click Train.
+        4. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: The model trains and reports cross-validated metrics.
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      placeholder: Chrome 130, Firefox 132, Safari 18.1
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: Ubuntu 24.04, macOS 15, Windows 11
+    validations:
+      required: true
+
+  - type: dropdown
+    id: project-type
+    attributes:
+      label: Project type
+      options:
+        - Object detection
+        - Instance segmentation
+        - Keypoint
+        - Classification
+        - Not project-specific
+    validations:
+      required: true
+
+  - type: input
+    id: dataset-size
+    attributes:
+      label: Dataset size
+      description: Approximate image and annotation counts when the problem appeared.
+      placeholder: 24 images, 31 annotations, 3 classes
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console output or screenshots
+      description: Paste errors, stack traces, or drag in non-sensitive screenshots.
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Anything else that might explain the behavior, including recent changes to the dataset.
+    validations:
+      required: false

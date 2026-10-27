@@ -1,0 +1,79 @@
+name: Feature request
+description: Propose a capability or improvement for OpenLabel.
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        OpenLabel is intentionally local-first: no account, no server, and no
+        uploads. Proposals that preserve that constraint are the easiest to
+        accept.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the workflow and the friction, not just the UI you have in mind.
+      placeholder: Our keypoint projects need per-point visibility so we can review occluded joints.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Explain the behavior you would like. Sketches and concrete examples help.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Existing workarounds, other tools, or a smaller change that would also help.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Annotation canvas
+        - Auto-label engine
+        - Import and export
+        - Dataset management
+        - Accessibility
+        - Performance
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Does this fit the local-first model?
+      description: Call out anything that would need a server, network service, or account.
+      placeholder: This runs entirely in a worker and stores results in IndexedDB.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I am willing to open a pull request for this feature.
+          required: false
+        - label: I can help test this feature with a representative dataset.
+          required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Links, prior art, or constraints that shaped the request.
+    validations:
+      required: false
