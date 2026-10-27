@@ -4,7 +4,6 @@ import { ChevronLeft, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import type { Project } from '@/core/types';
 import { deleteProject, getProject, updateProject } from '@/core/repo';
 import { useT } from '@/ui/i18n';
-import { ensureCollab } from '@/collab/runtime';
 import { Badge, Button, Dialog, Field, IconButton, Input, Menu, Spinner } from '@/ui/primitives';
 
 export function ProjectShell() {
@@ -34,11 +33,19 @@ export function ProjectShell() {
     if (project) document.title = `${project.name} · OpenLabel`;
   }, [project]);
 
-  // The studio bridge must run while annotating, not only on the team page.
+  // Collaboration is optional and heavy, so it loads after the first paint.
   useEffect(() => {
-    void ensureCollab(projectId).catch(() => {
-      // Collaboration is optional; the local studio keeps working without it.
-    });
+    let cancelled = false;
+    void import('@/collab/runtime')
+      .then(({ ensureCollab }) => {
+        if (!cancelled) return ensureCollab(projectId);
+      })
+      .catch(() => {
+        // Collaboration is optional; the local studio keeps working without it.
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [projectId]);
 
   if (loading) {

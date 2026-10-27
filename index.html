@@ -26,7 +26,20 @@
     <meta name="twitter:image" content="https://reyn1551.github.io/OpenLabel/og.png" />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!--
+        Static app shell: paints the loading state from the document itself so first
+        paint does not wait on the module graph. `createRoot` replaces it on the
+        first commit; keep it in sync with the Suspense fallback in App.tsx.
+      -->
+      <div class="grid h-dvh place-items-center">
+        <svg class="size-6 animate-spin text-[var(--muted)]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity="0.25" stroke-width="3"></circle>
+          <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
+        </svg>
+        <span class="sr-only">Loading</span>
+      </div>
+    </div>
     <noscript>OpenLabel needs JavaScript to annotate images on this device.</noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
