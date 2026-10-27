@@ -4,6 +4,7 @@ import { ChevronLeft, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import type { Project } from '@/core/types';
 import { deleteProject, getProject, updateProject } from '@/core/repo';
 import { useT } from '@/ui/i18n';
+import { ensureCollab } from '@/collab/runtime';
 import { Badge, Button, Dialog, Field, IconButton, Input, Menu, Spinner } from '@/ui/primitives';
 
 export function ProjectShell() {
@@ -33,6 +34,13 @@ export function ProjectShell() {
     if (project) document.title = `${project.name} · OpenLabel`;
   }, [project]);
 
+  // The studio bridge must run while annotating, not only on the team page.
+  useEffect(() => {
+    void ensureCollab(projectId).catch(() => {
+      // Collaboration is optional; the local studio keeps working without it.
+    });
+  }, [projectId]);
+
   if (loading) {
     return (
       <div className="grid h-full place-items-center">
@@ -57,6 +65,7 @@ export function ProjectShell() {
     { to: 'versions', label: t('versions.title') },
     { to: 'health', label: t('health.title') },
     { to: 'deploy', label: t('deploy.title') },
+    { to: 'team', label: t('team.title') },
   ];
 
   return (
