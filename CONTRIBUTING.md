@@ -18,7 +18,7 @@ Requirements:
 - npm (the repository commits `package-lock.json`).
 
 ```bash
-git clone https://github.com/openlabel/openlabel.git
+git clone https://github.com/Reyn1551/OpenLabel.git
 cd openlabel
 nvm use            # reads .nvmrc and selects Node 22 when nvm is installed
 npm ci             # or: npm install
