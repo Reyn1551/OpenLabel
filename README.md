@@ -374,3 +374,36 @@ the change.
 Apache License 2.0. See [LICENSE](LICENSE).
 
 Copyright 2026 OpenLabel contributors.
+---
+
+## Web app or desktop tool?
+
+LabelImg and LabelMe are desktop programs: they open a folder, write XML/JSON
+next to the images, and never copy data. Roboflow is a hosted web app. OpenLabel
+deliberately picks a third point: a **local-first PWA** that behaves like a
+desktop tool where the platform allows it.
+
+| Concern | Desktop (LabelImg/LabelMe) | Hosted web (Roboflow) | OpenLabel |
+| --- | --- | --- | --- |
+| Install | Python + Qt, per-OS | none | installable PWA / static site |
+| Data location | your folder | vendor cloud | your browser storage, or your folder |
+| Offline | yes | no | yes, after first load |
+| Zero-upload | yes | no | yes |
+| Auto-labeling | no | hosted model | on-device few-shot model |
+| Folder import/export | native | n/a | File System Access API (Chromium) with upload fallback |
+| Multi-user review | no | yes | not yet (roadmap) |
+| Accessibility | varies | varies | WCAG 2.2 AA target, tested with axe + keyboard E2E |
+| Updates | manual | automatic | automatic, versioned by the service worker |
+
+Why not a desktop binary today: the auto-label engine, canvas, and exporters are
+plain TypeScript, so the same code runs in a browser, in a Tauri/Electron shell,
+or in a local server without a rewrite. Shipping a web build keeps the project
+testable in CI, accessible from any device, and free of native build matrices.
+`docs/ROADMAP.md` tracks optional desktop packaging. If you need filesystem
+semantics immediately, use **Open folder** and **Save to folder** in Chromium
+browsers: images are read in place and exports are written straight to disk.
+
+## Branching and releases
+
+See [docs/BRANCHING.md](docs/BRANCHING.md). `main` is protected by CI; features
+land through `feat/*` branches and merges. `main` deploys to GitHub Pages.
