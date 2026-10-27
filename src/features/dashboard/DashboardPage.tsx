@@ -24,7 +24,8 @@ import {
 import { importFiles } from '@/core/import';
 import { generateSampleScenes, SAMPLE_CLASSES } from '@/core/samples';
 import { useT, useToast } from '@/ui/i18n';
-import { Badge, Button, Card, Dialog, EmptyState, Field, IconButton, Input, Menu, Spinner } from '@/ui/primitives';
+import { Badge, Button, Card, EmptyState, Field, IconButton, Input, Spinner } from '@/ui/primitives';
+import { LazyDialog, LazyMenu } from '@/ui/lazy';
 import { Page } from '@/features/shell/AppShell';
 import { cn, dataUrlToBlob, formatBytes, formatDate } from '@/lib/utils';
 
@@ -180,7 +181,9 @@ export function DashboardPage() {
         </Card>
       ) : null}
 
-      <NewProjectDialog open={creating} onOpenChange={setCreating} onCreated={(project) => navigate(`/projects/${project.id}/annotate`)} />
+      {creating ? (
+        <NewProjectDialog open={creating} onOpenChange={setCreating} onCreated={(project) => navigate(`/projects/${project.id}/annotate`)} />
+      ) : null}
     </Page>
   );
 }
@@ -213,7 +216,7 @@ function ProjectCard({
     <div className="group relative flex h-full flex-col rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--elev-1)] transition-shadow hover:shadow-[var(--elev-2)]">
       <div className="flex items-start justify-between gap-2">
         <Badge tone="accent">{t(`project.type.${project.type}` as const)}</Badge>
-        <Menu
+        <LazyMenu
           label={`Actions for ${project.name}`}
           trigger={
             <IconButton label={`Actions for ${project.name}`} size="sm">
@@ -339,7 +342,7 @@ function NewProjectDialog({
   };
 
   return (
-    <Dialog
+    <LazyDialog
       open={open}
       onOpenChange={onOpenChange}
       title={t('newProject.title')}
@@ -414,6 +417,6 @@ function NewProjectDialog({
           />
         </Field>
       </form>
-    </Dialog>
+    </LazyDialog>
   );
 }

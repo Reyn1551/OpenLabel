@@ -138,7 +138,11 @@ export default defineConfig(({ command }) => ({
         // Radix layer in parallel with app code instead of one 460 kB request.
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
-          if (/node_modules\/(react|react-dom|scheduler|react-router|react-router-dom)\//.test(id)) {
+          // `preact` is aliased to `react`, so it must be grouped with the
+          // framework chunk. If it landed in the Radix chunk instead, the entry
+          // (which imports the JSX runtime) would pull the whole Radix bundle
+          // onto first paint.
+          if (/node_modules\/(react|react-dom|scheduler|react-router|react-router-dom|preact)\//.test(id)) {
             return 'vendor-react';
           }
           if (/node_modules\/(@radix-ui|@floating-ui|aria-hidden|react-remove-scroll|react-remove-scroll-bar|react-style-singleton|use-callback-ref|use-sidecar|detect-node-es|get-nonce|@babel\/runtime|tslib)\//.test(id)) {

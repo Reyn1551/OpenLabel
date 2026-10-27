@@ -1,7 +1,7 @@
 import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
 import { I18nProvider, ToastProvider } from '@/ui/i18n';
-import { TooltipProvider, Spinner } from '@/ui/primitives';
+import { Spinner } from '@/ui/primitives';
 import { watchSystemTheme, useSettings } from '@/core/settings';
 import { AppShell, Page } from '@/features/shell/AppShell';
 import { ProjectShell } from '@/features/shell/ProjectShell';
@@ -33,16 +33,15 @@ export function App() {
   return (
     <I18nProvider>
       <ToastProvider>
-        <TooltipProvider delayDuration={400}>
-          <BrowserRouter basename={import.meta.env.BASE_URL}>
-            <Suspense
-              fallback={
-                <div className="grid h-dvh place-items-center">
-                  <Spinner className="size-6 text-[var(--muted)]" />
-                  <span className="sr-only">Loading</span>
-                </div>
-              }
-            >
+        <BrowserRouter basename={import.meta.env.BASE_URL}>
+          <Suspense
+            fallback={
+              <div className="grid h-dvh place-items-center">
+                <Spinner className="size-6 text-[var(--muted)]" />
+                <span className="sr-only">Loading</span>
+              </div>
+            }
+          >
             <Routes>
               <Route element={<AppShell />}>
                 <Route index element={<DashboardPage />} />
@@ -61,7 +60,7 @@ export function App() {
                     <Page>
                       <div className="space-y-3 py-20 text-center">
                         <h1 className="text-xl font-semibold">Page not found</h1>
-                        <Link to="/" className="text-sm text-[var(--accent)] underline">
+                        <Link to="/" className="text-[var(--accent)] underline">
                           Back to projects
                         </Link>
                       </div>
@@ -70,9 +69,8 @@ export function App() {
                 />
               </Route>
             </Routes>
-            </Suspense>
-          </BrowserRouter>
-        </TooltipProvider>
+          </Suspense>
+        </BrowserRouter>
       </ToastProvider>
     </I18nProvider>
   );

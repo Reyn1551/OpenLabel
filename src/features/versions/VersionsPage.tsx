@@ -25,7 +25,8 @@ import {
 import { buildExport, zipExport, type ExportFormat } from '@/core/exporters';
 import { directoryPickerSupport, saveFilesToFolder } from '@/core/fs-access';
 import { useT, useToast } from '@/ui/i18n';
-import { Badge, Button, Card, Checkbox, Dialog, EmptyState, Field, Input, Select, Slider, Switch, Textarea } from '@/ui/primitives';
+import { Badge, Button, Card, Checkbox, EmptyState, Field, Input, Textarea } from '@/ui/primitives';
+import { Dialog, Select, Slider, Switch } from '@/ui/heavy';
 import { Page } from '@/features/shell/AppShell';
 import { downloadBlob, formatDate, formatPercent, safeFilename } from '@/lib/utils';
 

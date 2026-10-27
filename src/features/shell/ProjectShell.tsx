@@ -4,7 +4,8 @@ import { ChevronLeft, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import type { Project } from '@/core/types';
 import { deleteProject, getProject, updateProject } from '@/core/repo';
 import { useT } from '@/ui/i18n';
-import { Badge, Button, Dialog, Field, IconButton, Input, Menu, Spinner } from '@/ui/primitives';
+import { Badge, Button, Field, IconButton, Input, Spinner } from '@/ui/primitives';
+import { LazyDialog, LazyMenu } from '@/ui/lazy';
 
 export function ProjectShell() {
   const { projectId = '' } = useParams();
@@ -100,7 +101,7 @@ export function ProjectShell() {
             </NavLink>
           ))}
         </nav>
-        <Menu
+        <LazyMenu
           label="Project actions"
           trigger={
             <IconButton label="Project actions" size="sm">
@@ -125,7 +126,7 @@ export function ProjectShell() {
         <Outlet context={{ project, setProject }} />
       </div>
 
-      <Dialog
+      <LazyDialog
         open={renaming}
         onOpenChange={setRenaming}
         title={t('common.rename')}
@@ -151,7 +152,7 @@ export function ProjectShell() {
         <Field label={t('newProject.name')} htmlFor="rename-project">
           <Input id="rename-project" value={name} onChange={(event) => setName(event.target.value)} autoFocus />
         </Field>
-      </Dialog>
+      </LazyDialog>
     </div>
   );
 }

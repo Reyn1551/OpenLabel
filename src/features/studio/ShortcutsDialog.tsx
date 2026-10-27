@@ -1,4 +1,4 @@
-import { Dialog } from '@/ui/primitives';
+import { Dialog } from '@/ui/heavy';
 import { useT } from '@/ui/i18n';
 
 const SHORTCUTS: { keys: string; action: string }[] = [

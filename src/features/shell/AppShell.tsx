@@ -3,7 +3,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 import { Moon, Settings, Sun, WifiOff } from 'lucide-react';
 import { useSettings } from '@/core/settings';
 import { useT } from '@/ui/i18n';
-import { IconButton, Menu, Tooltip } from '@/ui/primitives';
+import { IconButton } from '@/ui/primitives';
 
 export function AppShell() {
   const { t } = useT();
@@ -57,26 +57,16 @@ export function AppShell() {
           >
             {t('nav.projects')}
           </NavLink>
-          <Tooltip label={online ? t('settings.offlineReady') : t('settings.offlineReady')}>
-            <span className="mx-1 hidden items-center gap-1 rounded-full border border-[var(--border)] px-2 py-0.5 text-[11px] text-[var(--muted)] sm:flex">
-              <WifiOff className="size-3" aria-hidden />
-              {online ? 'Local-first' : 'Offline'}
-            </span>
-          </Tooltip>
+          <span className="mx-1 hidden items-center gap-1 rounded-full border border-[var(--border)] px-2 py-0.5 text-[11px] text-[var(--muted)] sm:flex">
+            <WifiOff className="size-3" aria-hidden />
+            {online ? 'Local-first' : 'Offline'}
+          </span>
           <IconButton label={theme === 'dark' ? t('settings.theme.light') : t('settings.theme.dark')} onClick={toggleTheme} size="sm">
             {theme === 'dark' ? <Sun className="size-4" aria-hidden /> : <Moon className="size-4" aria-hidden />}
           </IconButton>
-          <Menu
-            label="Application menu"
-            trigger={
-              <IconButton label={t('common.settings')} size="sm">
-                <Settings className="size-4" aria-hidden />
-              </IconButton>
-            }
-            items={[
-              { label: t('nav.settings'), onSelect: () => navigate('/settings'), icon: <Settings className="size-4" aria-hidden /> },
-            ]}
-          />
+          <IconButton label={t('common.settings')} onClick={() => navigate('/settings')} size="sm">
+            <Settings className="size-4" aria-hidden />
+          </IconButton>
         </nav>
       </header>
       <main id="main-content" className="min-h-0 flex-1 overflow-hidden">

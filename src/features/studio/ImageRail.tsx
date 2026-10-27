@@ -3,7 +3,8 @@ import { FolderOpen, ImagePlus, Search, Trash2, Upload } from 'lucide-react';
 import type { ImageMeta } from '@/core/types';
 import { useStudio } from '@/core/store';
 import { useT } from '@/ui/i18n';
-import { Button, IconButton, Input, Menu, Select, Spinner } from '@/ui/primitives';
+import { Button, IconButton, Input, Spinner } from '@/ui/primitives';
+import { Menu, Select } from '@/ui/heavy';
 import { deleteImages } from '@/core/repo';
 import { useThumb } from './useThumb';
 

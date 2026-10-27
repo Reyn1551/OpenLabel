@@ -9,13 +9,9 @@ import {
   Button,
   IconButton,
   Input,
-  Select,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
   Textarea,
 } from '@/ui/primitives';
+import { Select, Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/heavy';
 import { geometryLabel } from '@/core/geometry';
 import { formatDate } from '@/lib/utils';
 import { AutoLabelPanel } from './AutoLabelPanel';

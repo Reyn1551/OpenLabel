@@ -4,7 +4,8 @@ import { useSettings, type Locale, type ThemeMode } from '@/core/settings';
 import { deleteProject, listProjects, storageEstimate } from '@/core/repo';
 import { getDB } from '@/core/db';
 import { useT, useToast } from '@/ui/i18n';
-import { Button, Card, Select, Spinner } from '@/ui/primitives';
+import { Button, Card, Spinner } from '@/ui/primitives';
+import { Select } from '@/ui/heavy';
 import { Page } from '@/features/shell/AppShell';
 import { downloadBlob, formatBytes } from '@/lib/utils';
 

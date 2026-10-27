@@ -16,7 +16,8 @@ import {
 } from 'lucide-react';
 import type { ClassDef } from '@/core/types';
 import { useStudio, type Tool } from '@/core/store';
-import { IconButton, Tooltip } from '@/ui/primitives';
+import { IconButton } from '@/ui/primitives';
+import { Tooltip } from '@/ui/heavy';
 import { useT } from '@/ui/i18n';
 import type { MessageKey } from '@/locales/en';
 

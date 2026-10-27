@@ -3,7 +3,8 @@ import { Check, Cpu, FlaskConical, Sparkles, X } from 'lucide-react';
 import type { MessageKey } from '@/locales/en';
 import { useStudio } from '@/core/store';
 import { useT, useToast } from '@/ui/i18n';
-import { Badge, Button, EmptyState, Progress, Slider, Switch } from '@/ui/primitives';
+import { Badge, Button, EmptyState } from '@/ui/primitives';
+import { Progress, Slider, Switch } from '@/ui/heavy';
 import { formatPercent } from '@/lib/utils';
 
 const STAGE_KEYS: Record<string, MessageKey> = {

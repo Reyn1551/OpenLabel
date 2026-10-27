@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ClassDef, ProjectType } from '@/core/types';
-import { Button, Dialog, Field, Input } from '@/ui/primitives';
+import { Button, Field, Input } from '@/ui/primitives';
+import { Dialog } from '@/ui/heavy';
 import { useT } from '@/ui/i18n';
 
 export function ClassDialog({

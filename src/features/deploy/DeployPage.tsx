@@ -6,7 +6,8 @@ import { getImageBlob, listImages, listModels } from '@/core/repo';
 import { autoLabelClient } from '@/autolabel/client';
 import { useT, useToast } from '@/ui/i18n';
 import { copyText } from '@/lib/clipboard';
-import { Badge, Button, Card, EmptyState, Select, Spinner } from '@/ui/primitives';
+import { Badge, Button, Card, EmptyState, Spinner } from '@/ui/primitives';
+import { Select } from '@/ui/heavy';
 import { Page } from '@/features/shell/AppShell';
 import { downloadBlob, formatPercent, safeFilename } from '@/lib/utils';
 

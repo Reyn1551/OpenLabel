@@ -70,13 +70,21 @@ screens.
    from ~29 s to ~21 s. The full Playwright suite (annotation, auto-label
    training, export, dialogs, menus, two-tab collaboration, axe on four screens)
    runs against it; a React A/B build scored 98 with the same markup.
+7. **Radix is a lazy chunk.** The Radix-backed controls (dialog, menu, select,
+   slider, tabs, switch, progress, tooltip) live in `src/ui/heavy.tsx`, a
+   separate chunk that the entry and the dashboard do not import statically.
+   The app shell uses plain buttons, and the dashboard only mounts its
+   `Dialog`/`Menu` when the user opens them, so `vendor-ui` (44 kB gzip) is not
+   fetched on first paint. The studio, which uses all of them, loads the chunk
+   on its own route. `Tooltip` is self-contained (it carries its own provider)
+   so no page needs a global `TooltipProvider`.
 
 ## Headroom
 
-`vendor-ui` (Radix) is still 44 kB gzip on the landing path because the dashboard
-imports `Dialog` and `Menu` for actions the user has not taken yet. Lazy-loading
-those two would move roughly a third of the remaining critical JavaScript off
-first paint; it is tracked as future work rather than shipped untested.
+`vendor-ui` (44 kB gzip) is off the landing path but still loads on the studio
+route. Splitting the Radix primitives further (e.g. a per-control lazy chunk)
+would shrink the studio's initial fetch, at the cost of more round trips while
+the studio is opening. It is tracked as future work rather than shipped untested.
 
 Everything else the app ships with — the annotation studio, auto-label engine,
 exports, and collaboration — stays in route chunks and is not on the landing
