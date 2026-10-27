@@ -100,6 +100,8 @@ export function startStudioBridge(session: CollabSession): StudioBridge {
   const lastImage = new Set<ImageKey>();
   let applying = false;
   let lastApplied: CollabState | null = null;
+  /** Remote state that arrived before the local project was seeded. */
+  let pendingRemote: CollabState | null = null;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let seeded = false;
 
@@ -229,6 +231,9 @@ export function startStudioBridge(session: CollabSession): StudioBridge {
     } finally {
       seeded = true;
       schedule();
+      const pending = pendingRemote;
+      pendingRemote = null;
+      if (pending) applyRemote(pending);
     }
   };
 
@@ -242,6 +247,12 @@ export function startStudioBridge(session: CollabSession): StudioBridge {
 
   /** Writes the merged view back into IndexedDB and the live studio state. */
   const applyRemote = (state: CollabState) => {
+    // Applying before seeding would replace local annotations with a state that
+    // does not contain them yet, deleting work that was never broadcast.
+    if (!seeded) {
+      pendingRemote = state;
+      return;
+    }
     if (state === lastApplied) return;
     lastApplied = state;
     const studio = useStudio.getState();
