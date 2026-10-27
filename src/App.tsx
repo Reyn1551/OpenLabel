@@ -1,16 +1,25 @@
-import { useEffect } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
 import { I18nProvider, ToastProvider } from '@/ui/i18n';
-import { TooltipProvider } from '@/ui/primitives';
+import { TooltipProvider, Spinner } from '@/ui/primitives';
 import { watchSystemTheme, useSettings } from '@/core/settings';
 import { AppShell, Page } from '@/features/shell/AppShell';
 import { ProjectShell } from '@/features/shell/ProjectShell';
-import { DashboardPage } from '@/features/dashboard/DashboardPage';
-import { StudioPage } from '@/features/studio/StudioPage';
-import { VersionsPage } from '@/features/versions/VersionsPage';
-import { HealthPage } from '@/features/health/HealthPage';
-import { DeployPage } from '@/features/deploy/DeployPage';
-import { SettingsPage } from '@/features/settings/SettingsPage';
+
+/** Route-level code splitting keeps the first paint free of the annotation studio. */
+function lazyNamed<T extends Record<string, React.ComponentType<never>>>(
+  loader: () => Promise<T>,
+  name: keyof T,
+) {
+  return lazy(async () => ({ default: (await loader())[name] as React.ComponentType }));
+}
+
+const DashboardPage = lazyNamed(() => import('@/features/dashboard/DashboardPage'), 'DashboardPage');
+const StudioPage = lazyNamed(() => import('@/features/studio/StudioPage'), 'StudioPage');
+const VersionsPage = lazyNamed(() => import('@/features/versions/VersionsPage'), 'VersionsPage');
+const HealthPage = lazyNamed(() => import('@/features/health/HealthPage'), 'HealthPage');
+const DeployPage = lazyNamed(() => import('@/features/deploy/DeployPage'), 'DeployPage');
+const SettingsPage = lazyNamed(() => import('@/features/settings/SettingsPage'), 'SettingsPage');
 
 export function App() {
   const hydrate = useSettings((state) => state.hydrate);
@@ -25,6 +34,14 @@ export function App() {
       <ToastProvider>
         <TooltipProvider delayDuration={400}>
           <BrowserRouter basename={import.meta.env.BASE_URL}>
+            <Suspense
+              fallback={
+                <div className="grid h-dvh place-items-center">
+                  <Spinner className="size-6 text-[var(--muted)]" />
+                  <span className="sr-only">Loading</span>
+                </div>
+              }
+            >
             <Routes>
               <Route element={<AppShell />}>
                 <Route index element={<DashboardPage />} />
@@ -51,6 +68,7 @@ export function App() {
                 />
               </Route>
             </Routes>
+            </Suspense>
           </BrowserRouter>
         </TooltipProvider>
       </ToastProvider>
