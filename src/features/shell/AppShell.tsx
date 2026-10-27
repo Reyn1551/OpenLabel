@@ -90,7 +90,12 @@ export function AppShell() {
 
 export function Page({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`h-full overflow-y-auto ${className}`}>
+    <div
+      className={`h-full overflow-y-auto ${className}`}
+      tabIndex={0}
+      role="region"
+      aria-label="Page content"
+    >
       <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">{children}</div>
     </div>
   );

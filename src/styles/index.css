@@ -29,9 +29,10 @@
   --muted: #4b5566;
   --accent: #4f46e5;
   --accent-fg: #ffffff;
-  --success: #0f7a4f;
-  --warning: #9a5b00;
-  --error: #b42318;
+  --success: #0a6a43;
+  --warning: #8a5200;
+  --error: #a81d13;
+  --danger-fg: #ffffff;
   --focus: #4f46e5;
   --canvas-bg: #e9ecf1;
   --grid: rgba(16, 19, 25, 0.08);
@@ -51,6 +52,7 @@
   --success: #4ade80;
   --warning: #fbbf24;
   --error: #f87171;
+  --danger-fg: #1a0505;
   --focus: #a99bff;
   --canvas-bg: #0f1218;
   --grid: rgba(255, 255, 255, 0.07);

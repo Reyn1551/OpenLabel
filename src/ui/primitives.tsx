@@ -22,7 +22,7 @@ const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
   secondary:
     'bg-[var(--surface-2)] text-[var(--fg)] border border-[var(--border)] hover:bg-[color-mix(in_oklab,var(--surface-2)_70%,var(--fg)_6%)]',
   ghost: 'bg-transparent text-[var(--fg)] border border-transparent hover:bg-[var(--surface-2)]',
-  danger: 'bg-[var(--error)] text-white border border-transparent hover:brightness-110',
+  danger: 'bg-[var(--error)] text-[var(--danger-fg)] border border-transparent hover:brightness-110',
   success: 'bg-[var(--success)] text-[#04120a] border border-transparent hover:brightness-110',
 };
 

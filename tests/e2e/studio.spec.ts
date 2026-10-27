@@ -55,6 +55,15 @@ test('studio has no accessibility violations', async ({ page }) => {
   expect(results.violations).toEqual([]);
 });
 
+test('light theme keeps contrast and structure', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' });
+  await loadDemo(page);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.getByRole('link', { name: 'Dataset health' }).click();
+  await expect(page.getByRole('heading', { name: 'Dataset health' })).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
 test('keyboard-only annotation creation and undo', async ({ page }) => {
   await loadDemo(page);
   const canvas = page.getByRole('application');
