@@ -2,18 +2,37 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+ * Design tokens.
+ *
+ * The `--color-*` entries map semantic tokens to Tailwind utilities; the `:root`
+ * and `.dark` blocks below are the single source of truth. Every value was
+ * checked against WCAG 2.2 (4.5:1 text, 3:1 non-text) — see docs/DESIGN.md for
+ * the ratios and the sources. New tokens are additive; the names the components
+ * already read (`--bg`, `--surface`, `--border`, `--fg`, `--muted`, `--accent`,
+ * `--accent-fg`, `--success`, `--warning`, `--error`, `--focus`, `--scrim`,
+ * `--canvas-bg`, `--grid`, `--danger-fg`) are kept.
+ */
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
   --color-border-subtle: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-fg: var(--fg);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
   --color-accent-fg: var(--accent-fg);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-accent-subtle-fg: var(--accent-subtle-fg);
+  --color-selected: var(--selected);
   --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
   --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
   --color-error: var(--error);
+  --color-error-bg: var(--error-bg);
   --color-focus: var(--focus);
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
@@ -21,51 +40,121 @@
 
 :root {
   color-scheme: light;
-  --bg: #f7f8fa;
-  --surface: #ffffff;
-  --surface-2: #eef0f4;
-  --border: #d8dce4;
-  --fg: #101319;
-  --muted: #4b5566;
-  --accent: #4f46e5;
+  /* Surfaces */
+  --bg: oklch(0.976 0.003 264.5);
+  --surface: oklch(1 0 0);
+  --surface-2: oklch(0.949 0.006 264.5);
+  --surface-3: oklch(0.924 0.009 264.5);
+  --canvas-bg: oklch(0.942 0.007 260.7);
+  /* Lines: --border is decorative; --border-strong is the control boundary (3:1) */
+  --border: oklch(0.884 0.011 261.8);
+  --border-strong: oklch(0.611 0.026 262.0);
+  /* Text */
+  --fg: oklch(0.205 0.012 270.8);
+  --muted: oklch(0.449 0.03 265.3);
+  /* Brand */
+  --accent: oklch(0.457 0.215 277.0);
   --accent-fg: #ffffff;
-  --success: #0a6a43;
-  --warning: #8a5200;
-  --error: #a81d13;
+  --accent-hover: oklch(0.405 0.2 277.0);
+  --accent-subtle: oklch(0.946 0.021 288.9);
+  --accent-subtle-fg: oklch(0.457 0.215 277.0);
+  --selected: oklch(0.932 0.027 281.3);
+  /* Status */
+  --success: oklch(0.464 0.103 158.8);
+  --success-bg: oklch(0.955 0.018 161.1);
+  --warning: oklch(0.452 0.1 67.1);
+  --warning-bg: oklch(0.962 0.033 83.7);
+  --error: oklch(0.501 0.178 28.7);
+  --error-bg: oklch(0.956 0.019 21.6);
   --danger-fg: #ffffff;
-  --focus: #4f46e5;
-  --canvas-bg: #e9ecf1;
-  --grid: rgba(16, 19, 25, 0.08);
-  --scrim: rgba(9, 12, 18, 0.55);
+  --focus: oklch(0.457 0.215 277.0);
+  --scrim: rgb(9 12 18 / 0.55);
+  --grid: rgb(16 19 25 / 0.08);
+  /* Elevation: three translucent levels */
+  --elev-1: 0 1px 2px rgb(16 19 25 / 0.06);
+  --elev-2: 0 4px 12px -2px rgb(16 19 25 / 0.1), 0 1px 3px rgb(16 19 25 / 0.06);
+  --elev-3: 0 16px 40px -8px rgb(16 19 25 / 0.18), 0 2px 8px rgb(16 19 25 / 0.08);
+  /* Motion */
+  --dur-1: 100ms;
+  --dur-2: 150ms;
+  --dur-3: 200ms;
+  --dur-4: 250ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  /* Control sizing (default density) */
+  --control-h-sm: 28px;
+  --control-h: 32px;
+  --control-h-lg: 40px;
+  --row-h: 32px;
+  --pad-x: 10px;
 }
 
 .dark {
   color-scheme: dark;
-  --bg: #0b0d12;
-  --surface: #12151c;
-  --surface-2: #1a1f29;
-  --border: #2a3040;
-  --fg: #f2f4f8;
-  --muted: #a3adc0;
-  --accent: #8b7cff;
-  --accent-fg: #0b0d12;
-  --success: #4ade80;
-  --warning: #fbbf24;
-  --error: #f87171;
+  --bg: oklch(0.154 0.009 264.3);
+  --surface: oklch(0.191 0.013 264.2);
+  --surface-2: oklch(0.234 0.017 259.8);
+  --surface-3: oklch(0.276 0.022 262.5);
+  --canvas-bg: oklch(0.168 0.012 260.6);
+  --border: oklch(0.312 0.021 262.5);
+  --border-strong: oklch(0.533 0.027 262.0);
+  --fg: oklch(0.957 0.007 260.7);
+  --muted: oklch(0.752 0.025 262.1);
+  --accent: oklch(0.68 0.158 276.9);
+  --accent-fg: oklch(0.154 0.009 264.3);
+  --accent-hover: oklch(0.735 0.14 276.9);
+  --accent-subtle: oklch(0.258 0.06 276.0);
+  --accent-subtle-fg: oklch(0.807 0.099 280.8);
+  --selected: oklch(0.292 0.05 271.9);
+  --success: oklch(0.8 0.182 151.7);
+  --success-bg: oklch(0.253 0.038 160.2);
+  --warning: oklch(0.837 0.164 84.4);
+  --warning-bg: oklch(0.247 0.04 83.4);
+  --error: oklch(0.711 0.166 22.2);
+  --error-bg: oklch(0.226 0.039 20.6);
   --danger-fg: #1a0505;
-  --focus: #a99bff;
-  --canvas-bg: #0f1218;
-  --grid: rgba(255, 255, 255, 0.07);
-  --scrim: rgba(2, 4, 8, 0.7);
+  --focus: oklch(0.785 0.104 274.7);
+  --scrim: rgb(2 4 8 / 0.7);
+  --grid: rgb(255 255 255 / 0.07);
+  --elev-1: 0 1px 2px rgb(0 0 0 / 0.6);
+  --elev-2: 0 4px 14px -2px rgb(0 0 0 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.04);
+  --elev-3: 0 20px 48px -10px rgb(0 0 0 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.05);
+}
+
+/* Density shifts control size and padding only — never font size. */
+[data-density='compact'] {
+  --control-h-sm: 24px;
+  --control-h: 28px;
+  --control-h-lg: 36px;
+  --row-h: 28px;
+  --pad-x: 8px;
+}
+[data-density='comfortable'] {
+  --control-h-sm: 32px;
+  --control-h: 40px;
+  --control-h-lg: 48px;
+  --row-h: 40px;
+  --pad-x: 14px;
+}
+/* Touch never gets a sub-44px target. */
+@media (pointer: coarse) {
+  :root {
+    --control-h-sm: 28px;
+    --control-h: 44px;
+    --row-h: 44px;
+  }
 }
 
 @media (prefers-contrast: more) {
   :root {
     --border: #6b7280;
+    --border-strong: #4b5563;
     --muted: #374151;
   }
   .dark {
     --border: #64748b;
+    --border-strong: #94a3b8;
     --muted: #cbd5e1;
   }
 }
@@ -85,6 +174,8 @@ body {
   background: var(--bg);
   color: var(--fg);
   font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.25rem;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -97,16 +188,21 @@ body {
   background: color-mix(in oklab, var(--accent) 35%, transparent);
 }
 
+/* Double-ring focus: a 2px gap in the surface colour, then a 2px ring. It clears
+   3:1 against both the control fill and the page and never animates. */
 :focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 4px var(--focus);
   border-radius: 4px;
 }
 
-/* The canvas is a drawing surface; its focus ring must stay visible on dark. */
+/* The canvas is a drawing surface; its focus ring sits inside the edge. */
 .canvas-surface:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: -3px;
+  box-shadow: none;
 }
 
 .skip-link {
@@ -119,11 +215,12 @@ body {
   color: var(--accent-fg);
   border-radius: 0.5rem;
   font-weight: 600;
-  transition: top 120ms ease-out;
+  transition: top 120ms var(--ease-standard);
 }
 
 .skip-link:focus-visible {
   top: 0.75rem;
+  box-shadow: none;
 }
 
 .sr-only {
@@ -145,7 +242,11 @@ body {
     linear-gradient(45deg, transparent 75%, var(--grid) 75%),
     linear-gradient(-45deg, transparent 75%, var(--grid) 75%);
   background-size: 16px 16px;
-  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-position:
+    0 0,
+    0 8px,
+    8px -8px,
+    -8px 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -164,7 +265,6 @@ body {
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
 }
-
 *::-webkit-scrollbar {
   width: 10px;
   height: 10px;

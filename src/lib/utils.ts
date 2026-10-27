@@ -50,6 +50,24 @@ export async function blobToDataUrl(blob: Blob): Promise<string> {
   reader.readAsDataURL(blob);
   return promise;
 }
+/**
+ * Decodes a `data:` URL to a Blob without `fetch`.
+ *
+ * `fetch(dataUrl)` is blocked by a strict `connect-src 'self'` content security
+ * policy, which the self-hosted container sets. The demo dataset and any other
+ * in-memory image must therefore be materialised from the base64 body directly.
+ */
+export function dataUrlToBlob(dataUrl: string): Blob {
+  const comma = dataUrl.indexOf(',');
+  const meta = dataUrl.slice(0, comma);
+  const body = dataUrl.slice(comma + 1);
+  const mime = /data:([^;]+)/.exec(meta)?.[1] ?? 'application/octet-stream';
+  const bytes = meta.includes('base64')
+    ? Uint8Array.from(atob(body), (char) => char.charCodeAt(0))
+    : new TextEncoder().encode(decodeURIComponent(body));
+  return new Blob([bytes], { type: mime });
+}
+
 export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];

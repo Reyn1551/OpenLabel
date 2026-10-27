@@ -5,6 +5,7 @@ import type { ImageMeta, ModelBundle, Prediction, Project } from '@/core/types';
 import { getImageBlob, listImages, listModels } from '@/core/repo';
 import { autoLabelClient } from '@/autolabel/client';
 import { useT, useToast } from '@/ui/i18n';
+import { copyText } from '@/lib/clipboard';
 import { Badge, Button, Card, EmptyState, Select, Spinner } from '@/ui/primitives';
 import { Page } from '@/features/shell/AppShell';
 import { downloadBlob, formatPercent, safeFilename } from '@/lib/utils';
@@ -240,7 +241,9 @@ export function DeployPage() {
               className="mt-2"
               icon={<Copy className="size-4" aria-hidden />}
               onClick={() => {
-                void navigator.clipboard.writeText(snippet).then(() => notify({ title: t('common.copied'), tone: 'success' }));
+                void copyText(snippet).then((copied) =>
+                  notify({ title: copied ? t('common.copied') : t('team.copyFailed'), tone: copied ? 'success' : 'error' }),
+                );
               }}
             >
               {t('common.copy')}

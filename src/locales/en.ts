@@ -49,6 +49,11 @@ export const en = {
   'dashboard.deleteConfirm': 'Delete this project and everything inside it? This cannot be undone.',
   'dashboard.storage': 'Local storage',
   'dashboard.storageDetail': '{used} of {quota} used',
+  'dashboard.progress': 'Project progress',
+  'dashboard.step.images': 'Images',
+  'dashboard.step.annotate': 'Annotate',
+  'dashboard.step.train': 'Train',
+  'dashboard.step.freeze': 'Freeze',
   'dashboard.open': 'Open project',
   'dashboard.lastUpdated': 'Updated {date}',
 
@@ -284,6 +289,8 @@ export const en = {
   'import.zipReading': 'Extracting archive…',
   'import.pasteHint': 'Paste an image from the clipboard with Ctrl+V',
 
+  'team.insecure':
+    'This page is not served over HTTPS. Browsers limit clipboard access and may block device pairing; open it on localhost or enable TLS.',
   'team.title': 'Team',
   'team.subtitle':
     'Split the dataset across annotators on your network. Annotations sync device to device; images never leave the machines that already have them.',

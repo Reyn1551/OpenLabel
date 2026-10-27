@@ -18,12 +18,13 @@ type ButtonSize = 'sm' | 'md' | 'lg';
 
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    'bg-[var(--accent)] text-[var(--accent-fg)] hover:brightness-110 active:brightness-95 border border-transparent',
+    'bg-[var(--accent)] text-[var(--accent-fg)] hover:bg-[var(--accent-hover)] active:brightness-95 border border-transparent shadow-[var(--elev-1)]',
   secondary:
-    'bg-[var(--surface-2)] text-[var(--fg)] border border-[var(--border)] hover:bg-[color-mix(in_oklab,var(--surface-2)_70%,var(--fg)_6%)]',
+    'bg-[var(--surface)] text-[var(--fg)] border border-[var(--border-strong)] hover:bg-[var(--surface-2)]',
   ghost: 'bg-transparent text-[var(--fg)] border border-transparent hover:bg-[var(--surface-2)]',
   danger: 'bg-[var(--error)] text-[var(--danger-fg)] border border-transparent hover:brightness-110',
-  success: 'bg-[var(--success)] text-[#04120a] border border-transparent hover:brightness-110',
+  success:
+    'bg-[var(--success-bg)] text-[var(--success)] border border-[color-mix(in_oklab,var(--success)_40%,transparent)] hover:brightness-105',
 };
 
 const BUTTON_SIZES: Record<ButtonSize, string> = {
@@ -50,7 +51,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(
-        'inline-flex select-none items-center justify-center font-medium transition-[filter,background-color] duration-150',
+        'inline-flex select-none items-center justify-center font-medium transition-[background-color,border-color,filter] duration-150',
         'disabled:cursor-not-allowed disabled:opacity-55',
         BUTTON_VARIANTS[variant],
         BUTTON_SIZES[size],
@@ -134,7 +135,7 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
     <input
       ref={ref}
       className={cn(
-        'h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--fg)]',
+        'h-10 w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-3 text-sm text-[var(--fg)]',
         'placeholder:text-[var(--muted)] disabled:opacity-60',
         className,
       )}
@@ -151,7 +152,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
     <textarea
       ref={ref}
       className={cn(
-        'min-h-20 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--fg)]',
+        'min-h-20 w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--fg)]',
         'placeholder:text-[var(--muted)]',
         className,
       )}
@@ -353,10 +354,10 @@ export function Badge({
 }) {
   const tones = {
     neutral: 'bg-[var(--surface-2)] text-[var(--muted)] border-[var(--border)]',
-    accent: 'bg-[color-mix(in_oklab,var(--accent)_18%,transparent)] text-[var(--fg)] border-[color-mix(in_oklab,var(--accent)_40%,transparent)]',
-    success: 'bg-[color-mix(in_oklab,var(--success)_16%,transparent)] text-[var(--success)] border-[color-mix(in_oklab,var(--success)_40%,transparent)]',
-    warning: 'bg-[color-mix(in_oklab,var(--warning)_16%,transparent)] text-[var(--warning)] border-[color-mix(in_oklab,var(--warning)_40%,transparent)]',
-    error: 'bg-[color-mix(in_oklab,var(--error)_16%,transparent)] text-[var(--error)] border-[color-mix(in_oklab,var(--error)_40%,transparent)]',
+    accent: 'bg-[var(--accent-subtle)] text-[var(--accent-subtle-fg)] border-[color-mix(in_oklab,var(--accent)_40%,transparent)]',
+    success: 'bg-[var(--success-bg)] text-[var(--success)] border-[color-mix(in_oklab,var(--success)_40%,transparent)]',
+    warning: 'bg-[var(--warning-bg)] text-[var(--warning)] border-[color-mix(in_oklab,var(--warning)_40%,transparent)]',
+    error: 'bg-[var(--error-bg)] text-[var(--error)] border-[color-mix(in_oklab,var(--error)_40%,transparent)]',
   } as const;
   return (
     <span
@@ -397,7 +398,7 @@ export function Progress({ value, label }: { value: number; label: string }) {
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4', className)}>{children}</div>
+    <div className={cn('rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--elev-1)]', className)}>{children}</div>
   );
 }
 
@@ -448,11 +449,11 @@ export function Dialog({
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-[var(--scrim)] backdrop-blur-[2px]" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-[var(--scrim)]" />
         <DialogPrimitive.Content
           className={cn(
             'fixed left-1/2 top-1/2 z-50 max-h-[88vh] w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto',
-            'rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-2xl',
+            'rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--elev-3)]',
             wide ? 'max-w-3xl' : 'max-w-lg',
           )}
         >

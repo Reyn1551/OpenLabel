@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
+  ArrowRight,
   Boxes,
+  Check,
   Database,
-  FolderOpen,
   MoreHorizontal,
   Plus,
   Sparkles,
@@ -25,7 +26,7 @@ import { generateSampleScenes, SAMPLE_CLASSES } from '@/core/samples';
 import { useT, useToast } from '@/ui/i18n';
 import { Badge, Button, Card, Dialog, EmptyState, Field, IconButton, Input, Menu, Spinner } from '@/ui/primitives';
 import { Page } from '@/features/shell/AppShell';
-import { formatBytes, formatDate } from '@/lib/utils';
+import { cn, dataUrlToBlob, formatBytes, formatDate } from '@/lib/utils';
 
 const PROJECT_TYPES: ProjectType[] = [
   'object-detection',
@@ -64,7 +65,7 @@ export function DashboardPage() {
       const scenes = await generateSampleScenes(16);
       const files: File[] = [];
       for (const scene of scenes) {
-        const blob = await (await fetch(scene.pngDataUrl)).blob();
+        const blob = dataUrlToBlob(scene.pngDataUrl);
         files.push(new File([blob], scene.name, { type: 'image/png' }));
       }
       const result = await importFiles(project.id, files);
@@ -146,13 +147,14 @@ export function DashboardPage() {
         />
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {summaries.map(({ project, imageCount, annotationCount, versionCount }) => (
+          {summaries.map(({ project, imageCount, annotationCount, versionCount, modelCount }) => (
             <li key={project.id}>
               <ProjectCard
                 project={project}
                 imageCount={imageCount}
                 annotationCount={annotationCount}
                 versionCount={versionCount}
+                modelCount={modelCount}
                 onDelete={async () => {
                   if (!window.confirm(t('dashboard.deleteConfirm'))) return;
                   await deleteProject(project.id);
@@ -188,17 +190,27 @@ function ProjectCard({
   imageCount,
   annotationCount,
   versionCount,
+  modelCount,
   onDelete,
 }: {
   project: Project;
   imageCount: number;
   annotationCount: number;
   versionCount: number;
+  modelCount: number;
   onDelete: () => Promise<void>;
 }) {
   const { t } = useT();
+  const minAnnotations = project.autoLabel?.minAnnotations ?? 10;
+  const steps = [
+    { label: t('dashboard.step.images'), done: imageCount > 0 },
+    { label: t('dashboard.step.annotate'), done: annotationCount >= minAnnotations },
+    { label: t('dashboard.step.train'), done: modelCount > 0 },
+    { label: t('dashboard.step.freeze'), done: versionCount > 0 },
+  ];
+  const current = steps.findIndex((step) => !step.done);
   return (
-    <div className="group relative flex h-full flex-col rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 transition-colors hover:border-[var(--muted)]">
+    <div className="group relative flex h-full flex-col rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--elev-1)] transition-shadow hover:shadow-[var(--elev-2)]">
       <div className="flex items-start justify-between gap-2">
         <Badge tone="accent">{t(`project.type.${project.type}` as const)}</Badge>
         <Menu
@@ -223,22 +235,47 @@ function ProjectCard({
           {project.name}
         </Link>
       </h2>
-      <p className="mt-1 line-clamp-2 text-xs text-[var(--muted)]">
+      <p className="mt-1 line-clamp-2 min-h-8 text-xs text-[var(--muted)]">
         {project.description || t('dashboard.subtitle')}
       </p>
+
+      <ol className="mt-3 flex items-center gap-1.5" aria-label={t('dashboard.progress')}>
+        {steps.map((step, index) => {
+          const state = step.done ? 'done' : index === current ? 'current' : 'todo';
+          return (
+            <li
+              key={step.label}
+              className="flex flex-1 flex-col items-center gap-1"
+              title={step.label}
+              aria-current={state === 'current' ? 'step' : undefined}
+            >
+              <span
+                className={cn(
+                  'grid size-5 place-items-center rounded-full border text-[10px]',
+                  state === 'done' && 'border-transparent bg-[var(--accent)] text-[var(--accent-fg)]',
+                  state === 'current' && 'border-[var(--accent)] bg-[var(--accent-subtle)] text-[var(--accent-subtle-fg)]',
+                  state === 'todo' && 'border-[var(--border-strong)] text-[var(--muted)]',
+                )}
+              >
+                {state === 'done' ? <Check className="size-3" aria-hidden /> : index + 1}
+              </span>
+              <span className="text-[10px] leading-tight text-[var(--muted)]">{step.label}</span>
+            </li>
+          );
+        })}
+      </ol>
+
       <dl className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
-        <div className="rounded-md bg-[var(--surface-2)] p-1.5">
-          <dt className="text-[10px] uppercase tracking-wide text-[var(--muted)]">{t('common.images')}</dt>
-          <dd className="font-mono font-semibold">{imageCount}</dd>
-        </div>
-        <div className="rounded-md bg-[var(--surface-2)] p-1.5">
-          <dt className="text-[10px] uppercase tracking-wide text-[var(--muted)]">{t('common.annotations')}</dt>
-          <dd className="font-mono font-semibold">{annotationCount}</dd>
-        </div>
-        <div className="rounded-md bg-[var(--surface-2)] p-1.5">
-          <dt className="text-[10px] uppercase tracking-wide text-[var(--muted)]">{t('versions.title')}</dt>
-          <dd className="font-mono font-semibold">{versionCount}</dd>
-        </div>
+        {[
+          { label: t('common.images'), value: imageCount },
+          { label: t('common.annotations'), value: annotationCount },
+          { label: t('versions.title'), value: versionCount },
+        ].map((stat) => (
+          <div key={stat.label} className="rounded-md bg-[var(--surface-2)] p-1.5">
+            <dt className="text-[10px] uppercase tracking-wide text-[var(--muted)]">{stat.label}</dt>
+            <dd className="font-mono font-semibold tabular-nums">{stat.value}</dd>
+          </div>
+        ))}
       </dl>
       <div className="mt-3 flex items-center justify-between text-[11px] text-[var(--muted)]">
         <span>{t('dashboard.lastUpdated', { date: formatDate(project.updatedAt) })}</span>
@@ -246,8 +283,8 @@ function ProjectCard({
           to={`/projects/${project.id}/annotate`}
           className="inline-flex items-center gap-1 rounded px-1 py-0.5 font-medium text-[var(--accent)] hover:underline"
         >
-          <FolderOpen className="size-3.5" aria-hidden />
           {t('dashboard.open')}
+          <ArrowRight className="size-3" aria-hidden />
         </Link>
       </div>
     </div>

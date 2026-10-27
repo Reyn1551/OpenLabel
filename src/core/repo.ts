@@ -351,6 +351,7 @@ export interface ProjectSummary {
   imageCount: number;
   annotationCount: number;
   versionCount: number;
+  modelCount: number;
 }
 
 export async function projectSummaries(): Promise<ProjectSummary[]> {
@@ -361,6 +362,7 @@ export async function projectSummaries(): Promise<ProjectSummary[]> {
       imageCount: await countImages(project.id),
       annotationCount: await countAnnotations(project.id),
       versionCount: (await listVersions(project.id)).length,
+      modelCount: (await listModels(project.id)).length,
     })),
   );
   return summaries;

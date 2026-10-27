@@ -51,6 +51,11 @@ export const id: Dictionary = {
   'dashboard.deleteConfirm': 'Hapus proyek ini beserta isinya? Tindakan ini tidak dapat dibatalkan.',
   'dashboard.storage': 'Penyimpanan lokal',
   'dashboard.storageDetail': '{used} dari {quota} terpakai',
+  'dashboard.progress': 'Progres proyek',
+  'dashboard.step.images': 'Gambar',
+  'dashboard.step.annotate': 'Anotasi',
+  'dashboard.step.train': 'Latih',
+  'dashboard.step.freeze': 'Bekukan',
   'dashboard.open': 'Buka proyek',
   'dashboard.lastUpdated': 'Diperbarui {date}',
 
@@ -286,6 +291,8 @@ export const id: Dictionary = {
   'import.zipReading': 'Mengekstrak arsip…',
   'import.pasteHint': 'Tempel gambar dari papan klip dengan Ctrl+V',
 
+  'team.insecure':
+    'Halaman ini tidak lewat HTTPS. Peramban membatasi clipboard dan bisa memblokir pairing; buka lewat localhost atau aktifkan TLS.',
   'team.title': 'Tim',
   'team.subtitle':
     'Bagi dataset ke beberapa anotator di jaringan Anda. Anotasi tersinkron antar perangkat; gambar tidak pernah meninggalkan mesin yang sudah memilikinya.',

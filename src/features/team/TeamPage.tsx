@@ -7,6 +7,7 @@ import { Badge, Button, Card, Field, Spinner, Textarea } from '@/ui/primitives';
 import { Page } from '@/features/shell/AppShell';
 import { useCollab } from '@/collab/useCollab';
 import { materialize } from '@/collab/state';
+import { copyText } from '@/lib/clipboard';
 import type { ImageKey, Op } from '@/collab/types';
 
 const CLAIM_BATCH = 10;
@@ -60,6 +61,7 @@ export function TeamPage() {
   );
 
   const short = (id: string) => (id.length > 8 ? `${id.slice(0, 8)}…` : id);
+  const secureContext = typeof window === 'undefined' || window.isSecureContext;
 
   const submitClaim = (keys: ImageKey[], owner: string | null) => {
     if (!runtime || keys.length === 0) return;
@@ -77,12 +79,11 @@ export function TeamPage() {
   };
 
   const copy = async (value: string) => {
-    try {
-      await navigator.clipboard.writeText(value);
-      notify({ title: t('team.copied'), tone: 'success' });
-    } catch {
-      notify({ title: t('team.copyFailed'), tone: 'error' });
-    }
+    const copied = await copyText(value);
+    notify({
+      title: copied ? t('team.copied') : t('team.copyFailed'),
+      tone: copied ? 'success' : 'error',
+    });
   };
 
   const run = async (kind: 'invite' | 'join' | 'finish', action: () => Promise<void>) => {
@@ -163,6 +164,11 @@ export function TeamPage() {
             </div>
           </dl>
           <p className="mt-3 text-xs text-[var(--muted)]">{t('team.sameBrowser')}</p>
+          {secureContext ? null : (
+            <p className="mt-2 text-xs text-[var(--warning)]" role="status">
+              {t('team.insecure')}
+            </p>
+          )}
         </Card>
 
         <Card>
