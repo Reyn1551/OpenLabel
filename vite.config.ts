@@ -11,7 +11,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'robots.txt'],
+      includeAssets: ['favicon.svg', 'robots.txt', 'logo-light.svg', 'logo-dark.svg', 'og.png'],
       manifest: {
         name: 'OpenLabel — local-first annotation studio',
         short_name: 'OpenLabel',
@@ -25,7 +25,7 @@ export default defineConfig({
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: 'icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {

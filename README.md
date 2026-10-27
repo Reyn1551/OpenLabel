@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/logo-dark.svg" />
+    <img src="public/logo-light.svg" alt="OpenLabel" width="132" />
+  </picture>
+</p>
+
 # OpenLabel
 
 [![CI](https://github.com/Reyn1551/OpenLabel/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Reyn1551/OpenLabel/actions/workflows/ci.yml)

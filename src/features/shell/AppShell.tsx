@@ -39,11 +39,9 @@ export function AppShell() {
       </a>
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-3 sm:px-4">
         <Link to="/" className="flex items-center gap-2 rounded-md px-1 py-1 font-semibold">
-          <span aria-hidden className="grid size-7 place-items-center rounded-lg bg-[var(--accent)] text-[var(--accent-fg)]">
-            <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2.4">
-              <path d="M4 9V6a2 2 0 0 1 2-2h3M20 9V6a2 2 0 0 0-2-2h-3M4 15v3a2 2 0 0 0 2 2h3M20 15v3a2 2 0 0 1-2 2h-3" strokeLinecap="round" />
-              <path d="M9 12h6" strokeLinecap="round" />
-            </svg>
+          <span aria-hidden className="grid size-8 place-items-center">
+            <img src={`${import.meta.env.BASE_URL}logo-light.svg`} alt="" width={32} height={32} className="size-8 dark:hidden" />
+            <img src={`${import.meta.env.BASE_URL}logo-dark.svg`} alt="" width={32} height={32} className="hidden size-8 dark:block" />
           </span>
           <span className="text-[15px] tracking-tight">{t('app.name')}</span>
         </Link>
