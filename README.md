@@ -57,6 +57,21 @@ that turns a handful of labels into a reviewable dataset.
 
 ## Quickstart
 
+### Run it (no install)
+
+OpenLabel is a static app with no backend — the fastest way to run it is the
+container, published to GitHub Container Registry for `amd64` and `arm64`:
+
+```bash
+docker run -d --name openlabel --restart unless-stopped -p 8080:8080 \
+  ghcr.io/reyn1551/openlabel:latest
+```
+
+Open <http://localhost:8080>. For a team or a LAN/public hostname with HTTPS,
+use `docker compose` — see [docs/INSTALL.md](docs/INSTALL.md).
+
+### Develop
+
 Requirements: Node.js 20.19+ (Node 22 LTS recommended) and npm.
 
 ```bash
@@ -336,12 +351,16 @@ certification audit.
 │   ├── locales/          # UI strings
 │   └── styles/           # Tailwind entry and design tokens
 ├── tests/                # Vitest unit tests and Playwright e2e tests
-├── .github/workflows/    # CI and CodeQL
+├── docker/               # nginx + Caddy config for the container
+├── .github/workflows/    # CI, CodeQL, and the container image
 └── vite.config.ts        # Vite, PWA, Vitest configuration
 ```
 
 The main data flows are documented in
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). The visual design system and the
+research-backed studio roadmap are in [docs/DESIGN.md](docs/DESIGN.md), and
+running the app on your own machine (container, static host, HTTPS, air-gapped)
+is in [docs/INSTALL.md](docs/INSTALL.md).
 
 ---
 

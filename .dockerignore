@@ -1,0 +1,13 @@
+.git
+.github
+node_modules
+dist
+dist-preact
+coverage
+test-results
+playwright-report
+blob-report
+engine/target
+docs/assets
+*.log
+.DS_Store

@@ -1,0 +1,12 @@
+# Automatic HTTPS for a public hostname (DNS points at this machine).
+# Caddy obtains and renews the certificate on its own.
+
+{$OPENLABEL_HOST:localhost} {
+	encode zstd gzip
+	reverse_proxy openlabel:8080 {
+		header_up X-Forwarded-Proto {scheme}
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	}
+}

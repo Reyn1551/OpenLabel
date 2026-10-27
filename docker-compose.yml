@@ -1,0 +1,54 @@
+# OpenLabel — self-hosted.
+#
+# Default: `docker compose up -d` serves http://localhost:8080 (a secure context,
+# so the service worker, clipboard, and PWA install all work).
+#
+# LAN / public hostname: `OPENLABEL_HOST=labels.example.com docker compose
+# --profile tls up -d` runs Caddy in front with automatic HTTPS. For a LAN-only
+# name with no public DNS, use docker/Caddyfile.internal (`tls internal`) and
+# trust Caddy's local CA on each client — otherwise browsers block the service
+# worker and clipboard on a non-secure origin.
+
+services:
+  openlabel:
+    image: ghcr.io/reyn1551/openlabel:${OPENLABEL_TAG:-latest}
+    container_name: openlabel
+    restart: unless-stopped
+    ports:
+      - "${OPENLABEL_PORT:-8080}:8080"
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["tls"]
+    container_name: openlabel-tls
+    restart: unless-stopped
+    depends_on:
+      openlabel:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      OPENLABEL_HOST: ${OPENLABEL_HOST:-localhost}
+    volumes:
+      - ./${CADDYFILE:-docker/Caddyfile}:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

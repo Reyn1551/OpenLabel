@@ -1,0 +1,16 @@
+# LAN-only hostname with no public DNS.
+#
+# Caddy issues a certificate from its own local CA. Every client must trust that
+# CA (see docs/INSTALL.md, "Trusting the local CA") or the browser will treat the
+# origin as non-secure and block the service worker and clipboard.
+
+{$OPENLABEL_HOST:openlabel.local} {
+	tls internal
+	encode zstd gzip
+	reverse_proxy openlabel:8080 {
+		header_up X-Forwarded-Proto {scheme}
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	}
+}
