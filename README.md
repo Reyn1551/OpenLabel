@@ -1,6 +1,6 @@
 # OpenLabel
 
-[![CI](https://github.com/openlabel/openlabel/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/openlabel/openlabel/actions/workflows/ci.yml)
+[![CI](https://github.com/Reyn1551/OpenLabel/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Reyn1551/OpenLabel/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 **A local-first image annotation studio with few-shot auto-labeling.**
@@ -53,7 +53,7 @@ that turns a handful of labels into a reviewable dataset.
 Requirements: Node.js 20.19+ (Node 22 LTS recommended) and npm.
 
 ```bash
-git clone https://github.com/openlabel/openlabel.git
+git clone https://github.com/Reyn1551/OpenLabel.git
 cd openlabel
 nvm use            # optional; reads .nvmrc
 npm install

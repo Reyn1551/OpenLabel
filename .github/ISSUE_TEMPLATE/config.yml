@@ -2,11 +2,11 @@ blank_issues_enabled: false
 
 contact_links:
   - name: Documentation
-    url: https://github.com/openlabel/openlabel/tree/main/docs
+    url: https://github.com/Reyn1551/OpenLabel/tree/main/docs
     about: Architecture, auto-label algorithm details, and the roadmap.
   - name: Questions and usage help
-    url: https://github.com/openlabel/openlabel/discussions
+    url: https://github.com/Reyn1551/OpenLabel/discussions
     about: Ask for help or discuss an idea before opening a feature request.
   - name: Report a security vulnerability
-    url: https://github.com/openlabel/openlabel/security/advisories/new
+    url: https://github.com/Reyn1551/OpenLabel/security/advisories/new
     about: Report vulnerabilities privately. Never disclose them in a public issue.
