@@ -36,6 +36,18 @@ that turns a handful of labels into a reviewable dataset.
 
 ---
 
+## Screenshots
+
+| Studio + Auto Label | Dataset health |
+| --- | --- |
+| ![Annotation studio with few-shot suggestions](docs/assets/studio-autolabel.png) | ![Dataset health report](docs/assets/health.png) |
+
+| Projects | Export |
+| --- | --- |
+| ![Project dashboard](docs/assets/dashboard.png) | ![Export dialog](docs/assets/export.png) |
+
+---
+
 ## Quickstart
 
 Requirements: Node.js 20.19+ (Node 22 LTS recommended) and npm.
