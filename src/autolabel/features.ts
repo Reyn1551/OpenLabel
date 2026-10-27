@@ -38,11 +38,91 @@ export interface CellGrid {
   planes: Float32Array[];
   /** Per-plane summed-area table, length (gw+1)*(gh+1). */
   integral: Float32Array[];
+  /** Backend that produced the grid; absent means the JavaScript reference. */
+  engine?: 'js' | 'wasm';
+  /** Engine handle for wasm grids. */
+  handle?: number;
+}
+
+/**
+ * Optional accelerated implementation of the pixel-bound pass.
+ *
+ * `features.ts` stays the reference: the backend must produce the same numbers,
+ * and every consumer works unchanged with either one.
+ */
+export interface FeatureBackend {
+  buildCellGrid(image: RGBAImage, cell: number): CellGrid;
+  descriptor(grid: CellGrid, rect: Rect, out?: Float32Array): Float32Array | null;
+  descriptors?(grid: CellGrid, rects: Rect[]): Float32Array[];
+  release?(grid: CellGrid): void;
+}
+
+let backend: FeatureBackend | null = null;
+
+export function setFeatureBackend(next: FeatureBackend | null): void {
+  backend = next;
+}
+
+export function featureBackend(): FeatureBackend | null {
+  return backend;
+}
+
+export function buildCellGrid(img: RGBAImage, cell = 4): CellGrid {
+  return backend ? backend.buildCellGrid(img, cell) : buildCellGridJs(img, cell);
+}
+
+export function descriptor(grid: CellGrid, rect: Rect, out?: Float32Array): Float32Array | null {
+  return backend ? backend.descriptor(grid, rect, out) : descriptorJs(grid, rect, out);
+}
+
+/** Batch form used by the proposal loop; collapses boundary calls. */
+export function descriptors(grid: CellGrid, rects: Rect[]): (Float32Array | null)[] {
+  if (!backend) return rects.map((rect) => descriptorJs(grid, rect));
+  if (backend.descriptors) return backend.descriptors(grid, rects);
+  return rects.map((rect) => backend!.descriptor(grid, rect));
+}
+
+/** Frees engine-side storage; a no-op for the JavaScript reference. */
+export function releaseGrid(grid: CellGrid): void {
+  backend?.release?.(grid);
 }
 
 const clampInt = (v: number, min: number, max: number): number => (v < min ? min : v > max ? max : v);
 
-export function buildCellGrid(img: RGBAImage, cell = 4): CellGrid {
+// tan(k * PI / 8) for the interior bin boundaries. Comparing against these
+// constants replaces atan2 with a handful of multiplications/divisions: atan2
+// has no wasm instruction, so every pixel paid a software call for a value that
+// only feeds an 8-way bucket.
+const TAN_1 = 0.41421356237309503; // tan(PI/8)
+const TAN_2 = 1;
+const TAN_3 = 2.414213562373095; // tan(3PI/8)
+
+/**
+ * Unsigned orientation bin for a gradient vector.
+ *
+ * Equivalent to `atan2(gy, gx)` normalized into [0, PI) and split into eight
+ * equal buckets, which is the definition used by the reference descriptors.
+ */
+export function orientationBin(gx: number, gy: number): number {
+  let dx = gx;
+  let dy = gy;
+  if (dx === 0) return 4;
+  if (dx < 0) {
+    dx = -dx;
+    dy = -dy;
+  }
+  const ratio = dy / dx;
+  if (ratio < -TAN_3) return 4;
+  if (ratio < -TAN_2) return 5;
+  if (ratio < -TAN_1) return 6;
+  if (ratio < 0) return 7;
+  if (ratio < TAN_1) return 0;
+  if (ratio < TAN_2) return 1;
+  if (ratio < TAN_3) return 2;
+  return 3;
+}
+
+export function buildCellGridJs(img: RGBAImage, cell = 4): CellGrid {
   const gw = Math.max(1, Math.ceil(img.width / cell));
   const gh = Math.max(1, Math.ceil(img.height / cell));
   const count = gw * gh;
@@ -77,21 +157,18 @@ export function buildCellGrid(img: RGBAImage, cell = 4): CellGrid {
       const yp = y < img.height - 1 ? y + 1 : y;
       const gx = (lum[y * img.width + xp] - lum[y * img.width + xm]) * 0.5;
       const gy = (lum[yp * img.width + x] - lum[ym * img.width + x]) * 0.5;
-      const mag = Math.hypot(gx, gy);
+      const mag = Math.sqrt(gx * gx + gy * gy);
       // Unsigned orientation keeps descriptors stable under horizontal flips.
-      let angle = Math.atan2(gy, gx);
-      if (angle < 0) angle += Math.PI;
-      const bin = Math.min(ORIENT_BINS - 1, Math.floor((angle / Math.PI) * ORIENT_BINS));
+      const bin = orientationBin(gx, gy);
       rest[bin][idx] += mag;
       magPlane[idx] += mag;
     }
   }
 
+  // One division per cell: the color planes are already inside `planes`, so
+  // dividing them separately would scale L/a/b down twice and mute color.
   for (let i = 0; i < count; i++) {
     const c = counts[i] || 1;
-    pL[i] /= c;
-    pA[i] /= c;
-    pB[i] /= c;
     for (const plane of planes) plane[i] /= c;
   }
 
@@ -140,7 +217,7 @@ export const DESCRIPTOR_DIM = SUB * SUB * CELL_PLANES + 2;
  * The last two dimensions encode log aspect and log relative area, which give
  * the classifier a cheap shape prior.
  */
-export function descriptor(grid: CellGrid, rect: Rect, out?: Float32Array): Float32Array | null {
+export function descriptorJs(grid: CellGrid, rect: Rect, out?: Float32Array): Float32Array | null {
   const cells = rectToCells(grid, rect);
   if (!cells) return null;
   const dim = DESCRIPTOR_DIM;

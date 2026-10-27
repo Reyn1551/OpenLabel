@@ -49,6 +49,35 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  engine:
+    name: WASM engine parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the engine from source
+        run: npm run build:engine
+
+      - name: Prove it matches the JavaScript reference
+        run: npx vitest run tests/unit/engine-parity.test.ts
+
   e2e:
     name: Playwright (Chromium)
     runs-on: ubuntu-latest

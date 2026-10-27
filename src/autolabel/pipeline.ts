@@ -12,6 +12,8 @@ import { bboxOfGeometry } from '@/core/geometry';
 import { uid, now } from '@/core/repo';
 import {
   buildCellGrid,
+  descriptors as describeRects,
+  releaseGrid,
   descriptor,
   rectIoU,
   mulberry32,
@@ -177,7 +179,6 @@ function randomNegatives(
 function buildDescriptorSamples(
   dataset: TrainDataset,
   classIndex: Map<string, number>,
-  levelsByImage: Map<string, GridLevel[]>,
   include: (imageId: string) => boolean,
   onProgress?: ProgressFn,
 ): SampleRecord[] {
@@ -204,7 +205,9 @@ function buildDescriptorSamples(
   const total = dataset.images.length || 1;
   dataset.images.forEach((image, index) => {
     if (!include(image.id)) return;
-    const levels = levelsByImage.get(image.id)!;
+    // One image at a time: a 5000-image project must not hold every grid.
+    const levels = gridLevels(image);
+    try {
     const annotations = byImage.get(image.id) ?? [];
     const boxes: Rect[] = [];
     for (const annotation of annotations) {
@@ -256,6 +259,9 @@ function buildDescriptorSamples(
       progress: (index + 1) / total,
       message: `Extracting features ${index + 1}/${total}`,
     });
+    } finally {
+      for (const level of levels) releaseGrid(level.grid);
+    }
   });
   return samples;
 }
@@ -288,9 +294,11 @@ function detectInLevel(
   });
   const scored: ScoredBox[] = [];
   const scores = { classIndex: 0, confidence: 0, background: 0 };
-  for (const proposal of proposals) {
-    const rect = proposal.rect;
-    const vec = descriptor(grid, rect);
+  // One boundary call per level instead of one per proposal.
+  const vectors = describeRects(grid, proposals.map((proposal) => proposal.rect));
+  for (let index = 0; index < proposals.length; index += 1) {
+    const rect = proposals[index].rect;
+    const vec = vectors[index];
     if (!vec) continue;
     Object.assign(scores, scoreDescriptor(linear, vec));
     if (scores.confidence < threshold * 0.75) continue;
@@ -321,6 +329,7 @@ export function detectInImage(
 ): Prediction[] {
   const levels = gridLevels(img);
   const all: { box: Rect; classIndex: number; score: number }[] = [];
+  try {
   for (const level of levels) {
     const scaledAnchors = anchors.map((a) => ({
       ...a,
@@ -351,6 +360,9 @@ export function detectInImage(
       });
     }
   }
+  } finally {
+    for (const level of levels) releaseGrid(level.grid);
+  }
   // Merge levels with a final NMS pass in working space.
   const merged = nmsPerClass(all, settings.nmsIou, settings.maxPerImage);
   return merged.map((item) => ({
@@ -379,18 +391,8 @@ export function trainAutoLabel(dataset: TrainDataset, onProgress?: ProgressFn): 
   }
 
   onProgress?.({ stage: 'features', progress: 0, message: 'Preparing working images' });
-  const levelsByImage = new Map<string, GridLevel[]>();
-  dataset.images.forEach((image, index) => {
-    levelsByImage.set(image.id, gridLevels(image));
-    onProgress?.({
-      stage: 'features',
-      progress: ((index + 1) / dataset.images.length) * 0.4,
-      message: `Computing image features ${index + 1}/${dataset.images.length}`,
-    });
-  });
-
-  const allSamples = buildDescriptorSamples(dataset, classIndex, levelsByImage, () => true, (p) =>
-    onProgress?.({ ...p, progress: 0.4 + p.progress * 0.25 }),
+  const allSamples = buildDescriptorSamples(dataset, classIndex, () => true, (p) =>
+    onProgress?.({ ...p, progress: p.progress * 0.65 }),
   );
   if (allSamples.length === 0) throw new Error('No usable annotations (boxes must be at least 8 px).');
 
@@ -461,7 +463,8 @@ export function trainAutoLabel(dataset: TrainDataset, onProgress?: ProgressFn): 
       const truths: { box: Rect; classIndex: number }[] = [];
       for (const image of holdout) {
         truths.push(...(groundTruth.get(image.id) ?? []));
-        const levels = levelsByImage.get(image.id)!;
+        const levels = gridLevels(image);
+        try {
         for (const level of levels) {
           const scaledAnchors = anchors.map((a) => ({
             ...a,
@@ -492,6 +495,9 @@ export function trainAutoLabel(dataset: TrainDataset, onProgress?: ProgressFn): 
             });
           }
         }
+        } finally {
+          for (const level of levels) releaseGrid(level.grid);
+        }
       }
       collectBoxRatios(truths, predictions, widthRatios, heightRatios);
       const metrics = evaluateDetections(truths, predictions);
@@ -510,19 +516,23 @@ export function trainAutoLabel(dataset: TrainDataset, onProgress?: ProgressFn): 
     const truths: { box: Rect; classIndex: number }[] = [];
     for (const image of dataset.images) {
       truths.push(...(groundTruth.get(image.id) ?? []));
-      const levels = levelsByImage.get(image.id)!;
-      const preds = detectInLevel(
-        levels[0].grid,
-        linear,
-        dataset.classes.map((c) => c.id),
-        anchors,
-        0.2,
-        dataset.settings.nmsIou,
-        20,
-        templates,
-        dataset.settings.templateWeight,
-      );
-      predictions.push(...preds.map((p) => ({ classIndex: p.classIndex, score: p.score, box: p.box })));
+      const levels = gridLevels(image);
+      try {
+        const preds = detectInLevel(
+          levels[0].grid,
+          linear,
+          dataset.classes.map((c) => c.id),
+          anchors,
+          0.2,
+          dataset.settings.nmsIou,
+          20,
+          templates,
+          dataset.settings.templateWeight,
+        );
+        predictions.push(...preds.map((p) => ({ classIndex: p.classIndex, score: p.score, box: p.box })));
+      } finally {
+        for (const level of levels) releaseGrid(level.grid);
+      }
     }
     collectBoxRatios(truths, predictions, widthRatios, heightRatios);
     const metrics = evaluateDetections(truths, predictions);

@@ -27,3 +27,5 @@ playwright/.cache/
 logs/
 *.log
 npm-debug.log*
+# Rust build output
+engine/target/

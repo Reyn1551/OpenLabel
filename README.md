@@ -148,6 +148,12 @@ flowchart LR
   cross-validation with up to three folds.
 - **Worker-based execution.** Training and prediction run off the main thread,
   with progress and cancellation messages.
+- **Native-speed features.** The pixel-bound stage runs in a 23 KiB
+  Rust/WebAssembly module, with the TypeScript implementation kept as the
+  reference and fallback. See [docs/ENGINE.md](docs/ENGINE.md).
+- **Offline team collaboration.** Pair devices over the local network with a
+  copy-pasted invite code, claim a slice of the images, and let annotations
+  converge without any server. See [docs/COLLABORATION.md](docs/COLLABORATION.md).
 - **Standard exports.** YOLO, YOLO-seg, COCO, Pascal VOC, CSV, and OpenLabel
   JSON, generated in the browser as a download.
 - **Offline app shell.** The PWA service worker precaches the app shell for offline use.
@@ -173,7 +179,9 @@ exports use source dimensions.
 
 ## How the few-shot engine works
 
-The engine is dependency-free TypeScript and runs in a Web Worker.
+The engine runs in a Web Worker. The pixel-bound stage is a Rust module compiled
+to WebAssembly (with a dependency-free TypeScript reference kept as the
+fallback); everything else is TypeScript.
 
 1. Each image is scaled so its long side is at most **768 px**; the source scale
    is retained so predictions can be mapped back to original pixels.
@@ -290,13 +298,17 @@ certification audit.
 .
 ├── docs/                 # architecture, algorithm, roadmap
 ├── public/               # static assets, icons, manifest inputs
+├── engine/               # Rust feature engine (wasm32, hand-written C ABI)
+├── scripts/              # benchmarks and maintenance scripts
 ├── src/
+│   ├── collab/           # replicated state, transports, studio bridge
 │   ├── autolabel/        # pure few-shot engine
 │   │   ├── features.ts   # cell grid, integral images, descriptors
 │   │   ├── anchors.ts    # log-size k-means, proposal generation
 │   │   ├── model.ts      # Adam-trained linear softmax, NMS, metrics
 │   │   ├── mask.ts       # mask refinement and contour tracing
 │   │   ├── pipeline.ts   # training, validation, prediction
+│   │   ├── engine.ts     # WebAssembly loader and memory ABI
 │   │   ├── protocol.ts   # worker request/response types
 │   │   └── client.ts     # main-thread worker client and job cancellation
 │   ├── core/             # domain and persistence
@@ -314,7 +326,7 @@ certification audit.
 │   │   ├── settings.ts   # theme, locale, density, motion preferences
 │   │   └── exporters.ts  # dataset serializers and ZIP packaging
 │   ├── workers/          # Web Worker entry points
-│   ├── features/         # project, annotator, auto-label, export screens
+│   ├── features/         # project, annotator, auto-label, team, export screens
 │   ├── ui/               # shared React primitives
 │   ├── lib/              # browser and formatting utilities
 │   ├── locales/          # UI strings

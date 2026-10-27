@@ -1,8 +1,33 @@
 /// <reference lib="webworker" />
 import type { WorkerRequest, WorkerResponse, WorkerImageInput, ProgressMessage } from '@/autolabel/protocol';
 import { predictImage, trainAutoLabel, type TrainImage } from '@/autolabel/pipeline';
+import { instantiateEngine } from '@/autolabel/engine';
+import { setFeatureBackend } from '@/autolabel/features';
+import engineUrl from '@/autolabel/engine.wasm?url';
 
 const cancelled = new Set<string>();
+
+/**
+ * Loads the WebAssembly feature engine once per worker.
+ *
+ * Failure is not fatal: `features.ts` is the reference implementation, so the
+ * worker keeps training on the JavaScript path when the module cannot load
+ * (old engine, blocked asset, host without WebAssembly).
+ */
+let engineReady: Promise<void> | null = null;
+function ensureEngine(): Promise<void> {
+  engineReady ??= (async () => {
+    try {
+      const response = await fetch(engineUrl);
+      if (!response.ok) throw new Error(`engine.wasm responded ${response.status}`);
+      const engine = await instantiateEngine(response);
+      setFeatureBackend(engine);
+    } catch (error) {
+      console.warn('OpenLabel: WebAssembly engine unavailable, using the JavaScript reference.', error);
+    }
+  })();
+  return engineReady;
+}
 
 function post(message: WorkerResponse): void {
   (self as unknown as DedicatedWorkerGlobalScope).postMessage(message);
@@ -29,6 +54,7 @@ async function toWorkingImage(input: WorkerImageInput): Promise<TrainImage> {
 }
 
 async function handleTrain(request: Extract<WorkerRequest, { type: 'train' }>): Promise<void> {
+  await ensureEngine();
   const started = performance.now();
   const images: TrainImage[] = [];
   for (let index = 0; index < request.images.length; index++) {
@@ -63,6 +89,7 @@ async function handleTrain(request: Extract<WorkerRequest, { type: 'train' }>): 
 }
 
 async function handlePredict(request: Extract<WorkerRequest, { type: 'predict' }>): Promise<void> {
+  await ensureEngine();
   const started = performance.now();
   const results: { imageId: string; predictions: ReturnType<typeof predictImage> }[] = [];
   for (let index = 0; index < request.images.length; index++) {
