@@ -38,6 +38,7 @@
     "fflate": "^0.8.2",
     "idb": "^8.0.3",
     "lucide-react": "^0.545.0",
+    "preact": "^10.29.8",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.4",

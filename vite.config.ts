@@ -115,6 +115,13 @@ export default defineConfig(({ command }) => ({
   ],
   resolve: {
     alias: [
+      // Preact's compatibility layer: same React API, ~60 kB less JavaScript at
+      // runtime. See docs/PERFORMANCE.md for the measurement and the e2e guard.
+      { find: /^react$/, replacement: 'preact/compat' },
+      { find: /^react-dom$/, replacement: 'preact/compat' },
+      { find: /^react-dom\/client$/, replacement: 'preact/compat/client' },
+      { find: /^react\/jsx-runtime$/, replacement: 'preact/jsx-runtime' },
+      { find: /^react\/jsx-dev-runtime$/, replacement: 'preact/jsx-dev-runtime' },
       { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
       ...(command === 'build' ? reactRouterAliases : []),
     ],

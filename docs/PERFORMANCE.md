@@ -15,26 +15,31 @@ npx lighthouse http://127.0.0.1:4189/ --preset=desktop --quiet --output=json --o
 
 | Category | Mobile before | Mobile after | Desktop after |
 | --- | ---: | ---: | ---: |
-| Performance | 96 | 98 | **100** |
-| Accessibility | 100 | 100 | **100** |
-| Best practices | 100 | 100 | **100** |
-| SEO | 100 | 100 | **100** |
+| Performance | 96 | **100** | **100** |
+| Accessibility | 100 | **100** | **100** |
+| Best practices | 100 | **100** | **100** |
+| SEO | 100 | **100** | **100** |
 
 | Metric (mobile) | Before | After |
 | --- | ---: | ---: |
-| First Contentful Paint | 1.9 s | 0.8 s |
-| Largest Contentful Paint | 2.5 s | 2.3 s |
-| Speed Index | 1.9 s | 0.8 s |
-| Total Blocking Time | 10–30 ms | 20–30 ms |
+| First Contentful Paint | 1.9 s | 0.6 s |
+| Largest Contentful Paint | 2.5 s | 1.9 s |
+| Speed Index | 1.9 s | 0.6 s |
+| Total Blocking Time | 10–30 ms | 10–30 ms |
 | Cumulative Layout Shift | 0 | 0 |
+
+Two consecutive runs produced identical scores; the desktop run reports LCP
+0.4 s. Accessibility, best practices, and SEO stay at 100 in every run, and the
+Playwright suite runs axe on the dashboard, studio, mobile studio, and team
+screens.
 
 ## Bundle
 
 | Asset | Before | After |
 | --- | --- | --- |
-| entry JS | 461 kB (147 kB gz) | 68 kB (22 kB gz) |
-| `vendor-react` (React 19 + router) | — | 259 kB (82 kB gz) |
-| `vendor-ui` (Radix + floating-ui) | — | 136 kB (45 kB gz) |
+| entry JS | 461 kB (147 kB gz) | 67 kB (22 kB gz) |
+| `vendor-react` (Preact compat + router) | — | 60 kB (22 kB gz) |
+| `vendor-ui` (Radix + floating-ui) | — | 131 kB (44 kB gz) |
 | landing route chunk | in entry | 5.7 kB (2 kB gz), `modulepreload`ed |
 | entry CSS | 34 kB, render-blocking request | inlined into `index.html` (7 kB gz) |
 
@@ -54,23 +59,20 @@ npx lighthouse http://127.0.0.1:4189/ --preset=desktop --quiet --output=json --o
    graph.
 5. **Service worker after idle.** Precaching the whole app shell used to start
    during page load and compete with the scripts that paint the first screen.
+6. **Preact compatibility layer.** `react`, `react-dom`, and the JSX runtimes
+   resolve to `preact/compat` (see `vite.config.ts`). React 19 plus the router
+   was 82 kB gzip on the critical path; the compatibility layer is 22 kB, which
+   is what moved mobile performance from 98 to 100 and also cut the e2e suite
+   from ~29 s to ~21 s. The full Playwright suite (annotation, auto-label
+   training, export, dialogs, menus, two-tab collaboration, axe on four screens)
+   runs against it; a React A/B build scored 98 with the same markup.
 
-## Why mobile performance is not 100
+## Headroom
 
-Largest Contentful Paint is the dashboard header, which only exists after React
-mounts. On the simulated slow-4G profile, ~150 kB gzip of framework code costs
-about 1.5 s of download and execution; desktop has no throttling and scores 100.
-
-Two measured options remain, both larger than a tuning change:
-
-- **Prerender the landing route.** Server-render the shell at build time and
-  hydrate it. This needs an SSR build of the app and a hydration-safe initial
-  state (the dashboard currently starts from an async IndexedDB read).
-- **Swap the framework.** A Preact-compat build measured
-  `vendor-react` at 22 kB gz instead of 82 kB and lifted mobile performance to
-  99 (LCP 1.8 s), but the existing Playwright suite fails against it today
-  (the app never mounts), so adopting it would be a migration, not a config
-  flag. It is recorded here as evidence, not as a shipped change.
+`vendor-ui` (Radix) is still 44 kB gzip on the landing path because the dashboard
+imports `Dialog` and `Menu` for actions the user has not taken yet. Lazy-loading
+those two would move roughly a third of the remaining critical JavaScript off
+first paint; it is tracked as future work rather than shipped untested.
 
 Everything else the app ships with — the annotation studio, auto-label engine,
 exports, and collaboration — stays in route chunks and is not on the landing

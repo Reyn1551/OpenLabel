@@ -154,6 +154,10 @@ flowchart LR
 - **Offline team collaboration.** Pair devices over the local network with a
   copy-pasted invite code, claim a slice of the images, and let annotations
   converge without any server. See [docs/COLLABORATION.md](docs/COLLABORATION.md).
+- **Lighthouse 100.** Performance, accessibility, best practices, and SEO score
+  100 on the mobile and desktop presets. The UI uses the React API through
+  Preact's compatibility layer to keep the framework payload at 22 kB gzip. See
+  [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 - **Standard exports.** YOLO, YOLO-seg, COCO, Pascal VOC, CSV, and OpenLabel
   JSON, generated in the browser as a download.
 - **Offline app shell.** The PWA service worker precaches the app shell for offline use.
