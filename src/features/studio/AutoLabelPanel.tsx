@@ -114,7 +114,7 @@ export function AutoLabelPanel() {
           disabled={!canTrain || totals.total < required}
           loading={Boolean(training?.active)}
         >
-          {training?.active ? t('autolabel.training') : t('autolabel.train')}
+          {training?.active ? t('autolabel.training') : model ? t('autolabel.retrain') : t('autolabel.train')}
         </Button>
         {totals.total > 0 && totals.total < required ? (
           <Button size="sm" variant="ghost" onClick={() => void onTrain(true)} disabled={!canTrain}>
@@ -201,7 +201,7 @@ export function AutoLabelPanel() {
             checked={autoAccept}
             onChange={setAutoAccept}
             label={t('autolabel.autoAccept')}
-            description={t('autolabel.autoAccept')}
+            description={t('autolabel.autoAcceptHelp')}
           />
         </section>
       ) : (

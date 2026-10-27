@@ -28,6 +28,10 @@ export const id: Dictionary = {
   'common.copied': 'Disalin ke papan klip',
   'common.images': 'gambar',
   'common.annotations': 'anotasi',
+  'common.annotation.one': 'anotasi',
+  'common.annotation.other': 'anotasi',
+  'common.image.one': 'gambar',
+  'common.image.other': 'gambar',
   'common.classes': 'kelas',
 
   'nav.projects': 'Proyek',
@@ -176,6 +180,8 @@ export const id: Dictionary = {
   'autolabel.noModelHelp': 'Latih model untuk melihat saran pada gambar tanpa anotasi.',
   'autolabel.batchDone': '{count} gambar diberi label',
   'autolabel.autoAccept': 'Terima otomatis di atas ambang',
+  'autolabel.autoAcceptHelp': 'Saat pelabelan massal, terima saran langsung tanpa meninjaunya.',
+  'autolabel.retrain': 'Latih ulang model',
   'autolabel.lowDataWarning': 'Kurang dari 3 anotasi per kelas biasanya menghasilkan saran buruk.',
   'autolabel.trainError': 'Pelatihan gagal: {message}',
 
