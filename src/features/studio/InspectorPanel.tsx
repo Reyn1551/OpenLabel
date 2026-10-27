@@ -20,6 +20,8 @@ import { geometryLabel } from '@/core/geometry';
 import { formatDate } from '@/lib/utils';
 import { AutoLabelPanel } from './AutoLabelPanel';
 import { deleteImages } from '@/core/repo';
+import { findSimilarImages } from '@/core/health';
+import { useThumb } from './useThumb';
 
 export function InspectorPanel({ image }: { image: ImageMeta | null }) {
   const { t } = useT();
@@ -38,6 +40,8 @@ export function InspectorPanel({ image }: { image: ImageMeta | null }) {
   const setTags = useStudio((state) => state.setTags);
   const setNote = useStudio((state) => state.setNote);
   const refreshImages = useStudio((state) => state.refreshImages);
+  const images = useStudio((state) => state.images);
+  const selectImage = useStudio((state) => state.selectImage);
 
   const [newClass, setNewClass] = useState('');
   const [tagDraft, setTagDraft] = useState('');
@@ -233,6 +237,16 @@ export function InspectorPanel({ image }: { image: ImageMeta | null }) {
                 />
               </label>
 
+              <section aria-label={t('studio.similar')} className="space-y-1.5">
+                <h3 className="text-[13px] font-medium">{t('studio.similar')}</h3>
+                <p className="text-[11px] text-[var(--muted)]">{t('studio.similarHint')}</p>
+                <SimilarImages
+                  imageId={image.id}
+                  images={images}
+                  onSelect={(id) => selectImage(id)}
+                />
+              </section>
+
               <Button
                 size="sm"
                 variant="danger"
@@ -310,5 +324,46 @@ function AnnotationRow({
         <Trash2 className="size-3.5" aria-hidden />
       </IconButton>
     </li>
+  );
+}
+function SimilarImages({
+  imageId,
+  images,
+  onSelect,
+}: {
+  imageId: string;
+  images: ImageMeta[];
+  onSelect: (id: string) => void;
+}) {
+  const { t } = useT();
+  const similar = findSimilarImages(images, imageId, 4);
+  if (similar.length === 0) {
+    return <p className="text-[11px] text-[var(--muted)]">{t('studio.similarNone')}</p>;
+  }
+  return (
+    <ul className="grid grid-cols-4 gap-1.5">
+      {similar.map((item) => (
+        <li key={item.imageId}>
+          <SimilarThumb imageId={item.imageId} score={item.score} onSelect={() => onSelect(item.imageId)} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function SimilarThumb({ imageId, score, onSelect }: { imageId: string; score: number; onSelect: () => void }) {
+  const url = useThumb(imageId);
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className="group relative block aspect-square w-full overflow-hidden rounded border border-[var(--border)] bg-[var(--surface-2)]"
+      title={`Similarity ${(score * 100).toFixed(0)}%`}
+    >
+      {url ? <img src={url} alt="" className="size-full object-cover" loading="lazy" /> : null}
+      <span className="absolute inset-x-0 bottom-0 bg-black/60 px-1 py-0.5 text-[10px] text-white">
+        {(score * 100).toFixed(0)}%
+      </span>
+    </button>
   );
 }

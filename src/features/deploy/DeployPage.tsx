@@ -265,17 +265,17 @@ function PreviewCanvas({
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [bitmap, setBitmap] = useState<ImageBitmap | null>(null);
+  const previous = useRef<ImageBitmap | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    let loaded: ImageBitmap | null = null;
     void (async () => {
       const blob = file ?? (imageId ? await getImageBlob(imageId) : undefined);
       if (!blob) {
         setBitmap(null);
         return;
       }
-      loaded = await createImageBitmap(blob);
+      const loaded = await createImageBitmap(blob);
       if (cancelled) {
         loaded.close();
         return;
@@ -284,9 +284,13 @@ function PreviewCanvas({
     })();
     return () => {
       cancelled = true;
-      loaded?.close();
     };
   }, [file, imageId]);
+
+  useEffect(() => {
+    if (previous.current && previous.current !== bitmap) previous.current.close();
+    previous.current = bitmap;
+  }, [bitmap]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

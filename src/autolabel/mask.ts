@@ -46,6 +46,8 @@ export function refineBoxToPolygon(img: RGBAImage, box: Rect, maxSide = 192): Po
 
   const fg = meanColor(crop, w, h, boxInCrop, 0.6);
   const bg = borderMean(crop, w, h);
+  // Without colour separation the flood is meaningless; keep the box instead.
+  if (Math.hypot(fg[0] - bg[0], fg[1] - bg[1], fg[2] - bg[2]) < 24) return boxCorners(box);
   const colors = new Float32Array(6 * 3);
   colors.set(fg, 0);
   colors.set(bg, 3);
@@ -207,41 +209,109 @@ export function largestComponentMask(mask: Uint8Array, w: number, h: number): Ui
   return out;
 }
 
-/** Moore-neighbor boundary tracing, returning contour points clockwise. */
+function signedArea(points: Point[]): number {
+  let sum = 0;
+  for (let i = 0; i < points.length; i++) {
+    const a = points[i];
+    const b = points[(i + 1) % points.length];
+    sum += a.x * b.y - b.x * a.y;
+  }
+  return sum / 2;
+}
+
+/**
+ * Boundary extraction with marching squares.
+ *
+ * A 1-pixel background border guarantees closed loops even when the mask
+ * touches the crop edge. Ambiguous saddle cases emit both crossing pairs, then
+ * the largest closed loop is returned.
+ */
 export function traceMaskContour(mask: Uint8Array, w: number, h: number): Point[] {
-  let start = -1;
-  for (let i = 0; i < mask.length; i++) {
-    if (mask[i]) {
-      start = i;
-      break;
+  const pw = w + 2;
+  const ph = h + 2;
+  const padded = new Uint8Array(pw * ph);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) padded[(y + 1) * pw + (x + 1)] = mask[y * w + x] ? 1 : 0;
+  }
+
+  const stride = pw * 4 + 4;
+  const adjacency = new Map<number, number[]>();
+  const points = new Map<number, { x: number; y: number }>();
+  const link = (a: { x: number; y: number }, b: { x: number; y: number }): void => {
+    const ka = a.y * stride + a.x;
+    const kb = b.y * stride + b.x;
+    points.set(ka, a);
+    points.set(kb, b);
+    (adjacency.get(ka) ?? adjacency.set(ka, []).get(ka)!).push(kb);
+    (adjacency.get(kb) ?? adjacency.set(kb, []).get(kb)!).push(ka);
+  };
+
+  for (let y = 0; y < ph - 1; y++) {
+    for (let x = 0; x < pw - 1; x++) {
+      const tl = padded[y * pw + x];
+      const tr = padded[y * pw + x + 1];
+      const br = padded[(y + 1) * pw + x + 1];
+      const bl = padded[(y + 1) * pw + x];
+      const code = tl | (tr << 1) | (br << 2) | (bl << 3);
+      if (code === 0 || code === 15) continue;
+      const T = { x: 2 * x + 1, y: 2 * y };
+      const R = { x: 2 * x + 2, y: 2 * y + 1 };
+      const B = { x: 2 * x + 1, y: 2 * y + 2 };
+      const L = { x: 2 * x, y: 2 * y + 1 };
+      switch (code) {
+        case 1: link(L, T); break;
+        case 2: link(T, R); break;
+        case 3: link(L, R); break;
+        case 4: link(R, B); break;
+        case 5: link(L, T); link(R, B); break;
+        case 6: link(T, B); break;
+        case 7: link(L, B); break;
+        case 8: link(B, L); break;
+        case 9: link(T, B); break;
+        case 10: link(T, R); link(B, L); break;
+        case 11: link(R, B); break;
+        case 12: link(R, L); break;
+        case 13: link(T, R); break;
+        case 14: link(T, L); break;
+        default: break;
+      }
     }
   }
-  if (start < 0) return [];
-  const dirs = [
-    [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1],
-  ];
-  const points: Point[] = [];
-  let cx = start % w;
-  let cy = (start / w) | 0;
-  let dir = 7;
-  const limit = w * h * 4;
-  for (let step = 0; step < limit; step++) {
-    points.push({ x: cx, y: cy });
-    let found = false;
-    for (let k = 0; k < 8; k++) {
-      const d = (dir + 7 + k) % 8;
-      const nx = cx + dirs[(d + 1) % 8][0];
-      const ny = cy + dirs[(d + 1) % 8][1];
-      if (nx < 0 || ny < 0 || nx >= w || ny >= h || !mask[ny * w + nx]) continue;
-      cx = nx;
-      cy = ny;
-      dir = (d + 1) % 8;
-      found = true;
-      break;
+
+  const usedEdges = new Set<string>();
+  const edgeKey = (a: number, b: number): string => (a < b ? `${a}:${b}` : `${b}:${a}`);
+  let best: { x: number; y: number }[] = [];
+  let bestArea = 0;
+
+  for (const startNode of adjacency.keys()) {
+    const neighbors = adjacency.get(startNode) ?? [];
+    if (neighbors.length === 0) continue;
+    if (neighbors.some((neighbor) => !usedEdges.has(edgeKey(startNode, neighbor)))) {
+      const loop: number[] = [startNode];
+      let current = startNode;
+      let previous = -1;
+      for (let step = 0; step < adjacency.size + 2; step++) {
+        const candidates = (adjacency.get(current) ?? []).filter(
+          (neighbor) => !usedEdges.has(edgeKey(current, neighbor)),
+        );
+        if (candidates.length === 0) break;
+        const next = candidates.find((candidate) => candidate !== previous) ?? candidates[0];
+        usedEdges.add(edgeKey(current, next));
+        previous = current;
+        current = next;
+        if (current === startNode) break;
+        loop.push(current);
+      }
+      if (loop.length < 4) continue;
+      const ring = loop.map((node) => points.get(node)!);
+      const area = Math.abs(signedArea(ring));
+      if (area > bestArea) {
+        bestArea = area;
+        best = ring;
+      }
     }
-    if (!found) break;
-    if (cx === start % w && cy === ((start / w) | 0) && points.length > 3) break;
   }
-  // Keep every other point to reduce the vertex count before simplification.
-  return points.filter((_, index) => index % 2 === 0 || index === points.length - 1);
+
+  // Doubled grid coordinates, offset by the 1 px padding.
+  return best.map((p) => ({ x: p.x / 2 - 1, y: p.y / 2 - 1 }));
 }

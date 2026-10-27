@@ -7,7 +7,7 @@ const SHORTCUTS: { keys: string; action: string }[] = [
   { keys: 'P', action: 'Polygon tool' },
   { keys: 'K', action: 'Keypoint tool' },
   { keys: 'F', action: 'Freehand tool' },
-  { keys: 'W', action: 'Smart select (magic wand)' },
+  { keys: 'W', action: 'Smart select: click to flood-fill, drag to prompt with a box' },
   { keys: 'H or Space + drag', action: 'Pan' },
   { keys: '1 – 9', action: 'Switch active class' },
   { keys: 'Enter (canvas)', action: 'Keyboard placement / close polygon' },

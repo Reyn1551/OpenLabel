@@ -12,6 +12,7 @@ import {
 } from '@/core/geometry';
 import type { Tool } from '@/core/store';
 import { magicWandPolygon, downscaleForSelection } from '@/core/segment';
+import { refineBoxToPolygon } from '@/autolabel/mask';
 import type { RGBAImage } from '@/autolabel/features';
 import { useT } from '@/ui/i18n';
 
@@ -46,7 +47,7 @@ type Interaction =
   | { mode: 'resize'; id: string; handle: number; original: Geometry; start: Point }
   | { mode: 'vertex'; id: string; index: number; original: Geometry }
   | { mode: 'freehand'; points: Point[] }
-  | { mode: 'wand'; point: Point };
+  | { mode: 'prompt-box'; start: Point; current: Point };
 
 const HANDLE_RADIUS = 7;
 const HIT_SLOP = 6;
@@ -190,7 +191,11 @@ export function CanvasStage(props: CanvasStageProps) {
 
     if (bitmap) {
       ctx.imageSmoothingEnabled = zoom < 2;
-      ctx.drawImage(bitmap, pan.x, pan.y, image.width * zoom, image.height * zoom);
+      try {
+        ctx.drawImage(bitmap, pan.x, pan.y, image.width * zoom, image.height * zoom);
+      } catch {
+        // The bitmap can be closed while a newer image is loading; skip this frame.
+      }
     }
 
     if (!showAnnotations) return;
@@ -306,7 +311,7 @@ export function CanvasStage(props: CanvasStageProps) {
     ctx.strokeStyle = 'var(--accent)';
     ctx.lineWidth = 1.75;
     ctx.setLineDash([5, 4]);
-    if (active.mode === 'draw-box') {
+    if (active.mode === 'draw-box' || active.mode === 'prompt-box') {
       const a = screen(active.start);
       const b = screen(active.current);
       ctx.strokeRect(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(b.x - a.x), Math.abs(b.y - a.y));
@@ -485,13 +490,8 @@ export function CanvasStage(props: CanvasStageProps) {
     if (event.button !== 0) return;
 
     if (tool === 'wand') {
-      const data = ensureImageData();
-      if (!data) return;
-      const scale = imageDataRef.current?.scale ?? 1;
-      const polygon = magicWandPolygon(data, { x: point.x * scale, y: point.y * scale }, 26);
-      if (polygon.length >= 3) {
-        onCreate({ kind: 'polygon', points: polygon.map((p) => ({ x: p.x / scale, y: p.y / scale })) });
-      }
+      interaction.current = { mode: 'prompt-box', start: point, current: point };
+      setVersion((v) => v + 1);
       return;
     }
 
@@ -621,6 +621,11 @@ export function CanvasStage(props: CanvasStageProps) {
         setVersion((v) => v + 1);
         break;
       }
+      case 'prompt-box': {
+        active.current = point;
+        setVersion((v) => v + 1);
+        break;
+      }
       default:
         break;
     }
@@ -645,6 +650,35 @@ export function CanvasStage(props: CanvasStageProps) {
       const simplified = simplifyPolygon(active.points, 2);
       if (simplified.length >= 3 && polygonArea(simplified) > 8) {
         onCreate({ kind: 'polygon', points: simplified });
+      }
+    }
+    if (active.mode === 'prompt-box') {
+      const data = ensureImageData();
+      const scale = imageDataRef.current?.scale ?? 1;
+      const rect = {
+        x: Math.min(active.start.x, active.current.x) * scale,
+        y: Math.min(active.start.y, active.current.y) * scale,
+        width: Math.abs(active.current.x - active.start.x) * scale,
+        height: Math.abs(active.current.y - active.start.y) * scale,
+      };
+      if (data && rect.width > 8 && rect.height > 8) {
+        const polygon = refineBoxToPolygon(data, rect);
+        onCreate({
+          kind: 'polygon',
+          points: polygon.map((p) => ({ x: p.x / scale, y: p.y / scale })),
+        });
+      } else if (data) {
+        const polygon = magicWandPolygon(
+          data,
+          { x: active.start.x * scale, y: active.start.y * scale },
+          26,
+        );
+        if (polygon.length >= 3) {
+          onCreate({
+            kind: 'polygon',
+            points: polygon.map((p) => ({ x: p.x / scale, y: p.y / scale })),
+          });
+        }
       }
     }
     if (active.mode === 'move' || active.mode === 'resize' || active.mode === 'vertex') {
