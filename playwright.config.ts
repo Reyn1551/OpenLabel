@@ -15,7 +15,6 @@ export default defineConfig({
     screenshot: 'only-on-failure',
 
     acceptDownloads: true,
-    channel: 'chrome',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
