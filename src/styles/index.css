@@ -1,0 +1,180 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border-subtle: var(--border);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-focus: var(--focus);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+:root {
+  color-scheme: light;
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --surface-2: #eef0f4;
+  --border: #d8dce4;
+  --fg: #101319;
+  --muted: #4b5566;
+  --accent: #4f46e5;
+  --accent-fg: #ffffff;
+  --success: #0f7a4f;
+  --warning: #9a5b00;
+  --error: #b42318;
+  --focus: #4f46e5;
+  --canvas-bg: #e9ecf1;
+  --grid: rgba(16, 19, 25, 0.08);
+  --scrim: rgba(9, 12, 18, 0.55);
+}
+
+.dark {
+  color-scheme: dark;
+  --bg: #0b0d12;
+  --surface: #12151c;
+  --surface-2: #1a1f29;
+  --border: #2a3040;
+  --fg: #f2f4f8;
+  --muted: #a3adc0;
+  --accent: #8b7cff;
+  --accent-fg: #0b0d12;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --error: #f87171;
+  --focus: #a99bff;
+  --canvas-bg: #0f1218;
+  --grid: rgba(255, 255, 255, 0.07);
+  --scrim: rgba(2, 4, 8, 0.7);
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --border: #6b7280;
+    --muted: #374151;
+  }
+  .dark {
+    --border: #64748b;
+    --muted: #cbd5e1;
+  }
+}
+
+* {
+  min-width: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+:where(a) {
+  color: inherit;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--accent) 35%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* The canvas is a drawing surface; its focus ring must stay visible on dark. */
+.canvas-surface:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+}
+
+.skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: -3rem;
+  z-index: 100;
+  padding: 0.5rem 0.9rem;
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: top 120ms ease-out;
+}
+
+.skip-link:focus-visible {
+  top: 0.75rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.checkerboard {
+  background-image:
+    linear-gradient(45deg, var(--grid) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--grid) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--grid) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--grid) 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Native scrollbars tuned for both themes. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+[data-density='compact'] .row-pad {
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+}
