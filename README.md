@@ -378,6 +378,12 @@ with an explicit error rather than silently degrading.
   proxied through or sent to an OpenLabel server.
 - The app shell is served as static files and cached by a service worker for
   offline use; serving an update may fetch new static assets.
+- **Team collaboration never uploads anything.** Pairing uses WebRTC with no
+  STUN or TURN servers, so only the two paired devices exchange traffic; the
+  invite code (SDP) contains the local IP addresses of the device that created
+  it, so share it only with the people you would tell those addresses to. Only
+  annotation metadata, claims, and review state are replicated — image bytes
+  stay on the devices that already have them.
 
 See [SECURITY.md](SECURITY.md) for the threat model and reporting process.
 
