@@ -26,6 +26,10 @@ export const en = {
   'common.copied': 'Copied to clipboard',
   'common.images': 'images',
   'common.annotations': 'annotations',
+  'common.annotation.one': 'annotation',
+  'common.annotation.other': 'annotations',
+  'common.image.one': 'image',
+  'common.image.other': 'images',
   'common.classes': 'classes',
 
   'nav.projects': 'Projects',
@@ -174,6 +178,8 @@ export const en = {
   'autolabel.noModelHelp': 'Train a model to see suggestions on unlabeled images.',
   'autolabel.batchDone': 'Labeled {count} images',
   'autolabel.autoAccept': 'Auto-accept above threshold',
+  'autolabel.autoAcceptHelp': 'During batch labeling, accept suggestions immediately instead of reviewing them.',
+  'autolabel.retrain': 'Retrain model',
   'autolabel.lowDataWarning': 'Fewer than 3 annotations per class usually produce poor suggestions.',
   'autolabel.trainError': 'Training failed: {message}',
 

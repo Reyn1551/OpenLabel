@@ -133,7 +133,8 @@ export function ImageRail({
                     <span className="block truncate text-[12px] font-medium">{image.name}</span>
                     <span className="mt-0.5 flex flex-wrap items-center gap-1 text-[11px] text-[var(--muted)]">
                       <span>
-                        {image.annotationCount} {t('common.annotations')}
+                        {image.annotationCount}{' '}
+                        {t(image.annotationCount === 1 ? 'common.annotation.one' : 'common.annotation.other')}
                       </span>
                       {suggestionCount > 0 ? (
                         <span className="rounded-full bg-[color-mix(in_oklab,var(--accent)_20%,transparent)] px-1.5 text-[10px] text-[var(--fg)]">

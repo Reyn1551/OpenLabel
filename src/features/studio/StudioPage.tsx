@@ -449,7 +449,7 @@ function StatusBar({
       <span className="truncate">{hasImage ? name : t('studio.noImages')}</span>
       <span aria-hidden>·</span>
       <span>
-        {count} {t('common.annotations')}
+        {count} {t(count === 1 ? 'common.annotation.one' : 'common.annotation.other')}
       </span>
       {suggestions > 0 ? (
         <>
