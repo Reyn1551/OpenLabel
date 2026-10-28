@@ -9,6 +9,24 @@ async function loadDemo(page: import('@playwright/test').Page): Promise<void> {
   await expect(page.getByRole('application')).toBeVisible({ timeout: 30_000 });
 }
 
+test('new project dialog keeps focus while typing', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Your projects' })).toBeVisible();
+  await page.getByRole('button', { name: 'New project' }).first().click();
+
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  const name = dialog.getByLabel('Project name', { exact: false });
+  await name.click();
+  await name.pressSequentially('Bearing inspection', { delay: 30 });
+
+  // The input must keep focus and retain every character: a remount would drop
+  // focus and reset the value.
+  await expect(name).toBeFocused();
+  await expect(name).toHaveValue('Bearing inspection');
+  await expect(dialog).toBeVisible();
+});
+
 test('dashboard has no accessibility violations', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Your projects' })).toBeVisible();
