@@ -76,6 +76,8 @@ export const en = {
   'newProject.create': 'Create project',
   'newProject.nameRequired': 'Give the project a name.',
 
+  'studio.prevImage': 'Previous image (A)',
+  'studio.nextImage': 'Next image (D)',
   'studio.images': 'Images',
   'studio.hideRail': 'Hide image list',
   'studio.showRail': 'Show image list',

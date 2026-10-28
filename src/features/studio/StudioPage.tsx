@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ImagePlus, Images, PanelLeft, PanelRight, Upload } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ImagePlus, Images, PanelLeft, PanelRight, Upload } from 'lucide-react';
 import type { MessageKey } from '@/locales/en';
 import type { Geometry } from '@/core/types';
 import { useStudio, type Tool } from '@/core/store';
@@ -26,6 +26,23 @@ const TOOL_KEYS: Record<string, Tool> = {
   w: 'wand',
   h: 'pan',
 };
+
+/**
+ * Moves the selection by one image and returns whether it moved.
+ *
+ * Shared by the keyboard handler and the prev/next buttons so both agree on the
+ * bounds. `A`/`D` are the primary keys (home row, left hand, on every layout);
+ * `[`/`]` still work as an alternative.
+ */
+function stepImage(delta: number): boolean {
+  const { images, selectedImageId, selectImage } = useStudio.getState();
+  const index = images.findIndex((item) => item.id === selectedImageId);
+  if (index < 0) return false;
+  const next = index + delta;
+  if (next < 0 || next >= images.length) return false;
+  selectImage(images[next].id);
+  return true;
+}
 
 
 export function StudioPage() {
@@ -58,6 +75,9 @@ export function StudioPage() {
   const beginEdit = useStudio((state) => state.beginEdit);
 
   const image = useMemo(() => images.find((item) => item.id === selectedImageId) ?? null, [images, selectedImageId]);
+  const imageIndex = useMemo(() => images.findIndex((item) => item.id === selectedImageId), [images, selectedImageId]);
+  const canPrev = imageIndex > 0;
+  const canNext = imageIndex >= 0 && imageIndex < images.length - 1;
   const { bitmap, loading: bitmapLoading, error: bitmapError } = useImageBitmap(selectedImageId);
   const currentAnnotations = useMemo(
     () => (selectedImageId ? annotations[selectedImageId] ?? [] : []),
@@ -240,13 +260,14 @@ export function StudioPage() {
         store.requestFit();
         return;
       }
-      if (key === '[' || key === ']') {
-        const index = store.images.findIndex((item) => item.id === store.selectedImageId);
-        const next = key === '[' ? index - 1 : index + 1;
-        if (next >= 0 && next < store.images.length) {
-          event.preventDefault();
-          store.selectImage(store.images[next].id);
-        }
+      const lower = key.toLowerCase();
+      if (lower === 'a' || key === '[') {
+        if (stepImage(-1)) event.preventDefault();
+        return;
+      }
+      if (lower === 'd' || key === ']') {
+        if (stepImage(1)) event.preventDefault();
+        return;
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -352,7 +373,13 @@ export function StudioPage() {
             <IconButton label={t('studio.images')} size="sm" onClick={() => setMobilePanel('images')}>
               <Images className="size-4" aria-hidden />
             </IconButton>
+            <IconButton label={t('studio.prevImage')} size="sm" onClick={() => stepImage(-1)} disabled={!canPrev}>
+              <ChevronLeft className="size-4" aria-hidden />
+            </IconButton>
             <span className="truncate text-xs text-[var(--muted)]">{image?.name ?? t('studio.noImages')}</span>
+            <IconButton label={t('studio.nextImage')} size="sm" onClick={() => stepImage(1)} disabled={!canNext}>
+              <ChevronRight className="size-4" aria-hidden />
+            </IconButton>
             <IconButton label="Inspector" size="sm" className="ml-auto" onClick={() => setMobilePanel('inspector')}>
               <PanelRight className="size-4" aria-hidden />
             </IconButton>
@@ -366,7 +393,13 @@ export function StudioPage() {
             >
               <PanelLeft className="size-4" aria-hidden />
             </IconButton>
+            <IconButton label={t('studio.prevImage')} size="sm" onClick={() => stepImage(-1)} disabled={!canPrev}>
+              <ChevronLeft className="size-4" aria-hidden />
+            </IconButton>
             <span className="truncate text-xs text-[var(--muted)]">{image?.name ?? t('studio.noImages')}</span>
+            <IconButton label={t('studio.nextImage')} size="sm" onClick={() => stepImage(1)} disabled={!canNext}>
+              <ChevronRight className="size-4" aria-hidden />
+            </IconButton>
             <span className="ml-auto hidden min-[1280px]:inline-flex">
               <IconButton
                 label={inspectorOpen ? t('studio.hideInspector') : t('studio.showInspector')}

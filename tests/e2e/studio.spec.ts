@@ -99,6 +99,27 @@ test('keyboard-only annotation creation and undo', async ({ page }) => {
   await page.keyboard.press('Control+z');
   await expect(page.getByRole('status').first()).toBeAttached();
 });
+test('A / D and the prev/next buttons step through images', async ({ page }) => {
+  await loadDemo(page);
+  const selected = () => page.locator('ul[aria-label="Images"] button[aria-current="true"]');
+  await expect(selected()).toHaveCount(1);
+  const first = (await selected().innerText()).trim();
+
+  await page.keyboard.press('d');
+  await expect.poll(async () => (await selected().innerText()).trim()).not.toBe(first);
+  const second = (await selected().innerText()).trim();
+
+  await page.keyboard.press('a');
+  await expect.poll(async () => (await selected().innerText()).trim()).toBe(first);
+
+  // The desktop bar's buttons do the same thing. `.last()` picks the visible
+  // desktop bar (the mobile bar's duplicate is lg:hidden at this viewport).
+  await page.getByRole('button', { name: 'Next image (D)' }).last().click();
+  await expect.poll(async () => (await selected().innerText()).trim()).toBe(second);
+  await page.getByRole('button', { name: 'Previous image (A)' }).last().click();
+  await expect.poll(async () => (await selected().innerText()).trim()).toBe(first);
+});
+
 test('switching images keeps the canvas mounted', async ({ page }) => {
   await loadDemo(page);
   await page.getByRole('tab', { name: 'Images', exact: true }).click();

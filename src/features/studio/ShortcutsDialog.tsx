@@ -17,7 +17,7 @@ const SHORTCUTS: { keys: string; action: string }[] = [
   { keys: 'Delete', action: 'Delete selected annotation' },
   { keys: '+ / −', action: 'Zoom in / out' },
   { keys: '0', action: 'Fit image to screen' },
-  { keys: '[ / ]', action: 'Previous / next image' },
+  { keys: 'A / D', action: 'Previous / next image (or [ / ])' },
   { keys: '?', action: 'This help' },
 ];
 

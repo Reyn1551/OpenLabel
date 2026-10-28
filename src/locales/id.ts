@@ -78,6 +78,8 @@ export const id: Dictionary = {
   'newProject.create': 'Buat proyek',
   'newProject.nameRequired': 'Beri nama proyek.',
 
+  'studio.prevImage': 'Gambar sebelumnya (A)',
+  'studio.nextImage': 'Gambar berikutnya (D)',
   'studio.images': 'Gambar',
   'studio.showRail': 'Tampilkan daftar gambar',
   'studio.hideRail': 'Sembunyikan daftar gambar',
