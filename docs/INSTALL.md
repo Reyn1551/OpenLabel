@@ -6,17 +6,40 @@ the browser's IndexedDB on the machine that created it. "Installing" means
 serving the built `dist/` over HTTP(S); the container is just a convenient,
 reproducible way to do that.
 
-You have three options, in order of how much you want to manage:
+You have four options, in order of how much you want to manage:
 
 | Option | When to use | You run |
 | --- | --- | --- |
-| **Container** (recommended) | A team or a machine that should "just work" | `docker run` or `docker compose up` |
+| **`npx openlabel`** (recommended) | Fastest way to try it; Node ≥ 20 on the host | one command |
+| **Container** | A team, or a host with no Node / air-gapped | `docker run` or `docker compose up` |
 | **Static host** | You already run nginx/Caddy/S3 | copy `dist/` |
 | **GitHub Pages** | A personal demo, no team | already configured in this repo |
 
 ---
 
-## 1. Container (recommended)
+## 0. `npx openlabel` (recommended)
+
+The quickest way to run OpenLabel on your own machine. It downloads a tiny
+package (a static-file server + the built app, one runtime dependency) and
+serves it at <http://localhost:4173>, opening your browser:
+
+```bash
+npx openlabel
+```
+
+- No account, no server, no upload. Projects live in that browser's IndexedDB,
+  so come back to the same URL.
+- `npx openlabel --host 0.0.0.0` serves to other machines on your network
+  (each browser origin keeps its own data).
+- `npx openlabel --port 5173` if 4173 is taken.
+- Install it once as a command: `npm install -g openlabel` then `openlabel`.
+
+Requires Node ≥ 20. For hosts without Node, or air-gapped/regulated
+environments, use the container below.
+
+---
+
+## 1. Container
 
 The image is published to GitHub Container Registry on every push to `main`
 and on every `v*` tag, for `linux/amd64` and `linux/arm64`. It is a

@@ -59,8 +59,22 @@ that turns a handful of labels into a reviewable dataset.
 
 ### Run it (no install)
 
-OpenLabel is a static app with no backend — the fastest way to run it is the
-container, published to GitHub Container Registry for `amd64` and `arm64`:
+```bash
+npx openlabel
+```
+
+That's the whole install. It serves the app at <http://localhost:4173> and opens
+your browser. No account, no server, no upload — your projects live in that
+browser's IndexedDB, so come back to the same URL. Needs Node ≥ 20.
+
+Serve to other machines on your network: `npx openlabel --host 0.0.0.0`.
+Install it once as a command with `npm install -g openlabel`.
+
+### Docker (air-gapped / no Node on host)
+
+OpenLabel is a static app with no backend. The container is the path for
+regulated or offline environments, published to GitHub Container Registry for
+`amd64` and `arm64`:
 
 ```bash
 docker run -d --name openlabel --restart unless-stopped -p 8080:8080 \

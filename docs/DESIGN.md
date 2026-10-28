@@ -23,41 +23,121 @@ four research passes (competitor IA, community pain, design craft, self-hosting)
 
 ## Tokens
 
-The palette is expressed in OKLCH so light and dark share one perceptual scale.
-Every text pair was checked against WCAG 2.2 (4.5:1 for text, 3:1 for non-text
-UI). The method is the WCAG relative-luminance formula
-`(L1 + 0.05) / (L2 + 0.05)`, compared unrounded.
+The palette is expressed in hex (converted from the researched OKLCH targets)
+so light and dark share one perceptual scale. Every text pair was checked
+against WCAG 2.2 (4.5:1 for text, 3:1 for non-text UI). The method is the WCAG
+relative-luminance formula `(L1 + 0.05) / (L2 + 0.05)`, compared unrounded.
 
-### Light
+### Light — warm paper
+
+Not pure white: `#fff`-on-`#000` at 21:1 blooms (halation), which reads as
+smeared, vibrating text over long sessions. A warm off-white keeps reading
+comfortable and keeps the elevation ladder intact.
 
 | Token | Value | Purpose |
 | --- | --- | --- |
-| `--bg` | `oklch(0.976 0.003 264.5)` | page background |
-| `--surface` | `oklch(1 0 0)` | cards, panels |
-| `--surface-2` | `oklch(0.949 0.006 264.5)` | recessed, table head, hover |
-| `--surface-3` | `oklch(0.924 0.009 264.5)` | pressed, wells |
-| `--border` | `oklch(0.884 0.011 261.8)` | decorative hairline (1.42:1, never a control edge) |
-| `--border-strong` | `oklch(0.611 0.026 262.0)` | control boundary (3.77:1 on white) |
-| `--fg` | `oklch(0.205 0.012 270.8)` | primary text (17.9:1 on surface) |
-| `--muted` | `oklch(0.449 0.03 265.3)` | secondary text (7.5:1 on surface) |
-| `--accent` | `oklch(0.457 0.215 277.0)` | primary action, focus ring (7.9:1) |
-| `--accent-hover` | `oklch(0.405 0.2 277.0)` | explicit hover — never `brightness()` |
-| `--accent-subtle` | `oklch(0.946 0.021 288.9)` | selected rows, accent chips |
-| `--success` / `--warning` / `--error` | see CSS | status text (6.5–7.6:1 on surface) |
-| `--success-bg` / `--warning-bg` / `--error-bg` | see CSS | status chip fills |
+| `--bg` | `#f3f1ed` | page background (L* 95) |
+| `--surface` | `#fcfbf8` | cards, panels |
+| `--surface-2` | `#eae7e1` | recessed, table head, hover |
+| `--surface-3` | `#dedad2` | pressed, wells |
+| `--border` | `#d3cec4` | decorative divider only (1.39:1, never a control edge) |
+| `--border-strong` | `#8a8377` | control boundary (3.33:1) |
+| `--fg` | `#1a1815` | primary text (17.1:1 on surface — halation budget, not 21:1) |
+| `--muted` | `#5a544b` | secondary text (7.2:1 on surface) |
+| `--accent` | `#0e6e66` | primary action, focus ring (5.9:1 on surface) |
+| `--accent-fg` | `#ffffff` | text on the accent (6.1:1) |
+| `--accent-subtle` | `#dcefea` | selected rows, accent chips |
+| `--success` / `--warning` / `--error` | `#0a6a43` / `#8a5300` / `#b3261e` | status text (6.1–6.4:1 on surface) |
+| `--success-bg` / `--warning-bg` / `--error-bg` | `#ddf3e8` / `#fbeeda` / `#fbe4e1` | status chip fills |
+| `--draft` | `#ff2e88` | in-progress canvas shapes (see below) |
 
-### Dark
+### Dark — warm graphite
+
+Not pure black: `#000` destroys the elevation ladder (you cannot step down from
+it) and causes black-smear during scroll on OLED. A warm graphite at L* 6.4
+keeps the ladder and avoids the blue-black that tints every photo cool by
+simultaneous contrast.
 
 | Token | Value | Notes |
 | --- | --- | --- |
-| `--bg` | `oklch(0.154 0.009 264.3)` | near-black, blue-tinted |
-| `--surface` | `oklch(0.191 0.013 264.2)` | 16.3:1 against `--fg` |
-| `--border-strong` | `oklch(0.533 0.027 262.0)` | 3.5:1 on surface |
-| `--accent` | `oklch(0.68 0.158 276.9)` | 6.6:1 for `--accent-fg` on it |
-| `--elev-1/2/3` | black shadows + 1px top light | dark elevation inverts the light recipe |
+| `--bg` | `#151412` | page background (L* 6.4) |
+| `--surface` | `#1c1a17` | 13.2:1 against `--fg` |
+| `--surface-2` | `#24221e` | recessed, table head, hover |
+| `--surface-3` | `#2d2a25` | pressed, wells |
+| `--border` | `#3b3731` | decorative divider (1.56:1) |
+| `--border-strong` | `#6f675c` | control boundary (3.31:1) |
+| `--fg` | `#e4e0d7` | warm off-white, not `#fff` (13.2:1) |
+| `--muted` | `#a8a29a` | secondary text (6.9:1 on surface) |
+| `--accent` | `#2fbfac` | 7.6:1 for `--accent-fg` on it |
+| `--accent-fg` | `#0c1512` | dark text on the light accent |
+| `--accent-subtle` | `#12312c` | selected rows, accent chips |
+| `--success` / `--warning` / `--error` | `#5cd08d` / `#e0a63c` / `#ff8079` | status text (7.1–9.0:1 on surface) |
+| `--success-bg` / `--warning-bg` / `--error-bg` | `#0f2a1d` / `#2d2210` / `#2e1614` | status chip fills |
+| `--draft` | `#ff2e88` | in-progress canvas shapes (see below) |
 
 The full block, including elevation, motion, and control-size tokens, is in
 `src/styles/index.css`.
+
+### Accent: why teal, not the AI purple
+
+The previous accent was indigo/violet (`#4f46e5` / `#8b7cff`), which sits in the
+hue-245–255 band that the Tailwind default scale made the path of least
+resistance — and that every model trained on that corpus reproduces. It reads as
+"AI-generated" on sight. Teal (`#0e6e66` / `#2fbfac`) was chosen by elimination:
+
+- **No semantic collision.** It is not success (green), not warning (amber),
+  not destructive (red), and not in the 8-class palette — so the accent can
+  carry "the thing you are manipulating right now" without ambiguity.
+- **Empty territory.** Linear is indigo, Figma/GitHub/Notion/Vercel are blue,
+  Datadog purple, Grafana orange, Raycast red. Teal is the one hue the peer set
+  has abandoned, and it does not read as "trying to be different."
+- **Complementary to photos.** At hue ≈185° it sits opposite the warm
+  skin/wood/foliage tones that dominate photographs, so canvas chrome never
+  competes with the image and selection handles stay readable over warm
+  subjects.
+
+### In-progress shapes: hot magenta + black/white ants
+
+A single-hue draft cannot work: for a stroke to hit 3:1 against black it needs
+low luminance, against white it needs high luminance, and against mid-gray it
+needs either extreme — no single luminance satisfies all three, and photos
+contain the whole range. So the draft is drawn as a **black + white + colour
+"sandwich"**: a black halo, a white halo, then the colour on top. For any
+background luminance `L`, `max(contrast(white, L), contrast(black, L))` is
+minimised at `L = 0.179` → **4.58:1**, so the pair is *guaranteed* ≥4.58:1 on
+every possible background. That is a proof, not a taste call, and it is why
+Photoshop marquees and Figma's selection are achromatic.
+
+The colour on top is hot magenta `#ff2e88`, deliberately distinct from the teal
+accent so "not committed yet" is unambiguous. Magenta is the hue rarest in
+natural photographs (after magenta flowers), so it never blends into content;
+and because the ants carry the contrast, a magenta-vs-rose misread is cosmetic,
+never a lost box. Implemented in `src/features/studio/CanvasStage.tsx`
+(`strokeDraft`).
+
+### The 8-class palette: Okabe–Ito
+
+The class colours are the Okabe–Ito colour-blind-safe palette (Wong,
+*Nat Methods* 2011), with the teal and black slots swapped out: teal would
+collide with the accent and black is invisible on dark photos.
+
+| # | Hex | Role |
+| --- | --- | --- |
+| 1 | `#d55e00` | ember / vermillion |
+| 2 | `#e69f00` | orange |
+| 3 | `#f0e442` | yellow |
+| 4 | `#3f8f52` | leaf green |
+| 5 | `#0072b2` | blue |
+| 6 | `#56b4e9` | sky |
+| 7 | `#cc79a7` | rose |
+| 8 | `#4a5058` | charcoal (unlabeled / other) |
+
+Verified CIE ΔE00 over all 28 pairs: normal-vision min 20.4, deuteranopia min
+12.7, protanopia min 13.2 — the ceiling of what 8 hues can do. **Hue is never
+the only channel:** every shape also renders its class name (label chip), and
+the sidebar swatches carry a `1px inset 0 0 0 var(--border-strong)` ring, so
+`#f0e442` (1.28:1 on a light surface) and `#4a5058` (2.13:1 on a dark surface)
+still read.
 
 ### Type
 
