@@ -10,10 +10,13 @@ import { BlobSync } from './blobs';
 import { startStudioBridge, type StudioBridge } from './bridge';
 import {
   buildInviteLink,
+  buildRoomLink,
   decodeSignal,
   decodeSignalLink,
   encodeSignal,
   encodeSignalLink,
+  lanAddressesFromSdp,
+  newRoomId,
   SIGNAL_PREFIX_DEFLATE,
 } from './signaling';
 import { CollabSession } from './session';
@@ -65,6 +68,13 @@ export interface CollabRuntime {
   /** Same three steps, but returning a link the other person can click. */
   createInviteLink(): Promise<string>;
   acceptInviteLink(code: string): Promise<string>;
+  /**
+   * One-click link: the offer is published to this instance's LAN rendezvous,
+   * so the other person never has to send an answer back.
+   */
+  createRoomLink(): Promise<string>;
+  /** Joins the room named by a one-click link and posts the answer back. */
+  joinRoom(room: string, host: string): Promise<void>;
   stop(): void;
 }
 
@@ -93,7 +103,9 @@ async function readBlobByHash(hash: string): Promise<Blob | null> {
  */
 async function storeIncomingBlob(hash: string, blob: Blob): Promise<void> {
   const image = await getImageByHash(hash);
-  if (!image) return;
+  // Throwing keeps the hash in the wanted set: the metadata may simply have
+  // replicated a moment after the bytes, and the retry will find the row.
+  if (!image) throw new Error(`No image row for hash ${hash} yet.`);
   if (await getImageBlob(image.id)) return;
 
   const decoded = await decodeImage(blob);
@@ -135,10 +147,16 @@ export function ensureCollab(projectId: string): Promise<CollabRuntime> {
       },
     });
 
-    /** Asks paired peers for every image this device knows about but lacks. */
+    /**
+     * Declares every image this device lacks, on every pair.
+     *
+     * `request` is idempotent and keeps the hash in a wanted set until the bytes
+     * arrive, so calling this repeatedly is cheaper than tracking which pairs
+     * were reachable at which moment.
+     */
     const requestMissing = async (): Promise<void> => {
-      if (links.length === 0) return;
-      for (const image of await listImages(projectId)) {
+      const images = await listImages(projectId);
+      for (const image of images) {
         if (await getImageBlob(image.id)) continue;
         for (const link of links) link.blobs.request(image.hash);
       }
@@ -151,14 +169,19 @@ export function ensureCollab(projectId: string): Promise<CollabRuntime> {
      */
     const openPeer = (): PeerLink => {
       let handler: ((raw: unknown) => void) | null = null;
+      // The link is referenced from its own transport events, which fire only
+      // after the constructor returns, so the binding is assigned by then.
+      const link: PeerLink = { transport: null as unknown as WebRtcTransport, blobs: null as unknown as BlobSync };
       const events: TransportEvents = {
         onOps: (ops, vv) => session.receive(ops, vv),
         onPeer: (peer, status) => {
           session.markPeer(peer, status === 'connected' ? 'connected' : 'pending');
-          if (status === 'connected') {
-            session.announce();
-            void requestMissing();
-          }
+          if (status !== 'connected') return;
+          session.announce();
+          // The channel is finally writable: flush every hash this device still
+          // wants. Requests that raced the connection are not lost any more.
+          link.blobs.onOpen();
+          void requestMissing();
         },
         onControl: (raw) => handler?.(raw),
       };
@@ -167,12 +190,15 @@ export function ensureCollab(projectId: string): Promise<CollabRuntime> {
         peer: session.peer,
         send: (message) => transport.sendControl(message),
         read: readBlobByHash,
-        received: (hash, blob) => void storeIncomingBlob(hash, blob),
+        received: (hash, blob) => storeIncomingBlob(hash, blob),
+        // One peer may not hold every image; keep waiting on the others.
+        onUnavailable: () => undefined,
       });
       handler = (raw) => {
         blobs.handle(raw);
       };
-      const link: PeerLink = { transport, blobs };
+      link.transport = transport;
+      link.blobs = blobs;
       links.push(link);
       fanout.add(transport);
       return link;
@@ -203,6 +229,87 @@ export function ensureCollab(projectId: string): Promise<CollabRuntime> {
         const code = await link.transport.createInvite();
         const encoded = await encodeSignalLink(decodeSignal(code));
         return buildInviteLink(encoded, projectId, projectName);
+      },
+      async createRoomLink() {
+        const link = openPeer();
+        pendingOffer = link;
+        const offer = await link.transport.createInvite();
+        // Chrome hides local IPs behind mDNS names in the SDP, so the CLI is asked
+        // for the machine's real interfaces instead. Fall back to the SDP's own
+        // candidate only when the instance is not served by our CLI.
+        const httpPort = window.location.port || '80';
+        let addresses: string[] = [];
+        try {
+          const info = await fetch(`${window.location.origin}/__info`);
+          if (info.ok) {
+            const body = (await info.json()) as { addresses?: string[] };
+            addresses = (body.addresses ?? []).map((address) => `${address}:${httpPort}`);
+          }
+        } catch {
+          // Older instance or a static host; the SDP fallback below still applies.
+        }
+        if (addresses.length === 0) {
+          addresses = lanAddressesFromSdp(decodeSignal(offer).sdp).map((entry) => {
+            const [address, icePort] = entry.split(':');
+            void icePort;
+            return `${address}:${httpPort}`;
+          });
+        }
+        if (addresses.length === 0) {
+          throw new Error('This device has no LAN address; use the manual invite link instead.');
+        }
+        const host = addresses.join(',');
+        const room = newRoomId();
+        const origin = window.location.origin;
+        const posted = await fetch(`${origin}/__signal/${room}`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ role: 'offer', payload: offer }),
+        });
+        if (!posted.ok) throw new Error('This OpenLabel instance cannot host a pairing room.');
+
+        // Poll for the guest's answer; the connection completes on its own.
+        void (async () => {
+          const deadline = Date.now() + 10 * 60 * 1000;
+          while (Date.now() < deadline && pendingOffer === link) {
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            try {
+              const response = await fetch(`${origin}/__signal/${room}?role=answer`);
+              if (!response.ok) continue;
+              const body = (await response.json()) as { payload?: string };
+              if (!body.payload) continue;
+              await link.transport.acceptAnswer(await toPlainCode(body.payload));
+              return;
+            } catch {
+              // Keep waiting; the guest may not have opened the link yet.
+            }
+          }
+        })();
+
+        return buildRoomLink({ room, host, projectId, name: projectName });
+      },
+      async joinRoom(room: string, host: string) {
+        const origin = window.location.origin;
+        const ownAddress = `${window.location.hostname}:${window.location.port || '80'}`;
+        // Try the host's advertised addresses, then this same instance. The
+        // second candidate keeps a demo on one machine working, and covers the
+        // case where the two devices reach each other through a shared address
+        // rather than the interface the link happened to name.
+        const relay = [host, ownAddress].filter(Boolean).join(',');
+        const response = await fetch(`${origin}/__signal/${room}?role=offer&relay=${encodeURIComponent(relay)}`);
+        if (!response.ok) throw new Error('The other device is not hosting this room any more.');
+        const body = (await response.json()) as { payload?: string };
+        if (!body.payload) throw new Error('The room has no offer yet.');
+
+        const link = openPeer();
+        pendingOffer = null;
+        const answer = await link.transport.acceptInvite(await toPlainCode(body.payload));
+        const posted = await fetch(`${origin}/__signal/${room}?relay=${encodeURIComponent(relay)}`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ role: 'answer', payload: answer }),
+        });
+        if (!posted.ok) throw new Error('Could not send the answer back to the host.');
       },
       async acceptInviteLink(code: string) {
         const link = openPeer();

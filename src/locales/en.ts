@@ -54,6 +54,8 @@ export const en = {
   'dashboard.step.annotate': 'Annotate',
   'dashboard.step.train': 'Train',
   'dashboard.step.freeze': 'Freeze',
+  'dashboard.joined': 'Joined',
+  'dashboard.rejoin': 'Rejoin',
   'dashboard.open': 'Open project',
   'dashboard.lastUpdated': 'Updated {date}',
 
@@ -116,6 +118,7 @@ export const en = {
   'studio.redo': 'Redo',
   'studio.deleteSelected': 'Delete annotation',
   'studio.duplicate': 'Duplicate annotation',
+  'studio.boxGeometry': 'Box position and size',
   'studio.annotationList': 'Annotations on this image',
   'studio.noAnnotations': 'No annotations on this image yet.',
   'studio.hideAll': 'Hide annotations',
@@ -308,6 +311,9 @@ export const en = {
   'team.linkTitle': 'Pair a device',
   'team.linkHint':
     'Send the invite link to the other person. They open it on their own machine, then send you the reply link. No account, no server, no upload.',
+  'team.createManual': 'Manual codes (different networks)',
+  'team.linkModes':
+    'The one-click link works on the same network. For devices in different places, create manual codes and exchange them by chat: the data still goes device to device.',
   'team.createLink': 'Create invite link',
   'team.inviteLink': 'Invite link to send',
   'team.replyPlaceholder': 'Paste the reply link you received',

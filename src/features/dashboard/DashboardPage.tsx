@@ -25,6 +25,7 @@ import { importFiles } from '@/core/import';
 import { generateSampleScenes, SAMPLE_CLASSES } from '@/core/samples';
 import { useT, useToast } from '@/ui/i18n';
 import { Badge, Button, Card, EmptyState, Field, IconButton, Input, Spinner } from '@/ui/primitives';
+import { listJoined, type JoinedProject } from '@/collab/remember';
 import { LazyDialog, LazyMenu } from '@/ui/lazy';
 import { Page } from '@/features/shell/AppShell';
 import { cn, dataUrlToBlob, formatBytes, formatDate } from '@/lib/utils';
@@ -40,6 +41,7 @@ export function DashboardPage() {
   const { t } = useT();
   const { notify } = useToast();
   const navigate = useNavigate();
+  const [joined, setJoined] = useState<JoinedProject[]>([]);
   const [summaries, setSummaries] = useState<ProjectSummary[] | null>(null);
   const [storage, setStorage] = useState<{ usage: number; quota: number } | null>(null);
   const [creating, setCreating] = useState(false);
@@ -47,6 +49,7 @@ export function DashboardPage() {
 
   const refresh = async () => {
     setSummaries(await projectSummaries());
+    setJoined(await listJoined());
     setStorage(await storageEstimate());
   };
 
@@ -156,6 +159,7 @@ export function DashboardPage() {
                 annotationCount={annotationCount}
                 versionCount={versionCount}
                 modelCount={modelCount}
+                joined={joined.find((entry) => entry.projectId === project.id)}
                 onDelete={async () => {
                   if (!window.confirm(t('dashboard.deleteConfirm'))) return;
                   await deleteProject(project.id);
@@ -194,6 +198,7 @@ function ProjectCard({
   annotationCount,
   versionCount,
   modelCount,
+  joined,
   onDelete,
 }: {
   project: Project;
@@ -201,6 +206,7 @@ function ProjectCard({
   annotationCount: number;
   versionCount: number;
   modelCount: number;
+  joined?: JoinedProject;
   onDelete: () => Promise<void>;
 }) {
   const { t } = useT();
@@ -280,15 +286,26 @@ function ProjectCard({
           </div>
         ))}
       </dl>
-      <div className="mt-3 flex items-center justify-between text-[11px] text-[var(--muted)]">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-[var(--muted)]">
         <span>{t('dashboard.lastUpdated', { date: formatDate(project.updatedAt) })}</span>
-        <Link
-          to={`/projects/${project.id}/annotate`}
-          className="inline-flex items-center gap-1 rounded px-1 py-0.5 font-medium text-[var(--accent)] hover:underline"
-        >
-          {t('dashboard.open')}
-          <ArrowRight className="size-3" aria-hidden />
-        </Link>
+        <span className="flex items-center gap-2">
+          {joined ? <Badge tone="neutral">{t('dashboard.joined')}</Badge> : null}
+          {joined?.room && joined.host ? (
+            <Link
+              to={`/join?room=${encodeURIComponent(joined.room)}&host=${encodeURIComponent(joined.host)}&p=${encodeURIComponent(project.id)}&n=${encodeURIComponent(project.name)}`}
+              className="inline-flex items-center gap-1 rounded px-1 py-0.5 font-medium text-[var(--accent)] hover:underline"
+            >
+              {t('dashboard.rejoin')}
+            </Link>
+          ) : null}
+          <Link
+            to={`/projects/${project.id}/annotate`}
+            className="inline-flex items-center gap-1 rounded px-1 py-0.5 font-medium text-[var(--accent)] hover:underline"
+          >
+            {t('dashboard.open')}
+            <ArrowRight className="size-3" aria-hidden />
+          </Link>
+        </span>
       </div>
     </div>
   );

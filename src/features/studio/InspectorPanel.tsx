@@ -38,6 +38,8 @@ export function InspectorPanel({ image }: { image: ImageMeta | null }) {
   const refreshImages = useStudio((state) => state.refreshImages);
   const images = useStudio((state) => state.images);
   const selectImage = useStudio((state) => state.selectImage);
+  const updateAnnotation = useStudio((state) => state.updateAnnotation);
+  const beginEdit = useStudio((state) => state.beginEdit);
 
   const [newClass, setNewClass] = useState('');
   const [tagDraft, setTagDraft] = useState('');
@@ -55,6 +57,10 @@ export function InspectorPanel({ image }: { image: ImageMeta | null }) {
   );
   const classes = project?.classes ?? [];
   const classMap = useMemo(() => new Map(classes.map((cls) => [cls.id, cls])), [classes]);
+  const selectedBbox = useMemo(() => {
+    const found = list.find((annotation) => annotation.id === selectedAnnotationId);
+    return found && found.geometry.kind === 'bbox' ? { id: found.id, geometry: found.geometry } : null;
+  }, [list, selectedAnnotationId]);
 
   return (
     <aside
@@ -75,6 +81,16 @@ export function InspectorPanel({ image }: { image: ImageMeta | null }) {
             <h2 className="text-[13px] font-semibold">{t('studio.annotationList')}</h2>
             <Badge>{list.length}</Badge>
           </div>
+          {selectedBbox ? (
+            <BoxGeometryEditor
+              key={selectedBbox.id}
+              geometry={selectedBbox.geometry}
+              onCommit={(next) => {
+                if (selectedImageId) beginEdit(selectedImageId);
+                updateAnnotation(selectedBbox.id, next, { commit: true });
+              }}
+            />
+          ) : null}
           {list.length === 0 ? (
             <p className="rounded-lg border border-dashed border-[var(--border)] p-4 text-xs text-[var(--muted)]">
               {t('studio.noAnnotations')}
@@ -264,6 +280,97 @@ export function InspectorPanel({ image }: { image: ImageMeta | null }) {
         </TabsContent>
       </Tabs>
     </aside>
+  );
+}
+
+
+/**
+ * Numeric box editor.
+ *
+ * Dragging a handle is imprecise on a small screen, so the selected box also
+ * exposes its four numbers. Edits apply on Enter or blur, which keeps undo
+ * history at one entry per deliberate change instead of one per keystroke.
+ */
+function BoxGeometryEditor({
+  geometry,
+  onCommit,
+}: {
+  geometry: { x: number; y: number; width: number; height: number };
+  onCommit: (next: { kind: 'bbox'; x: number; y: number; width: number; height: number }) => void;
+}) {
+  const { t } = useT();
+  const [draft, setDraft] = useState(() => ({
+    x: Math.round(geometry.x),
+    y: Math.round(geometry.y),
+    width: Math.round(geometry.width),
+    height: Math.round(geometry.height),
+  }));
+
+  useEffect(() => {
+    setDraft({
+      x: Math.round(geometry.x),
+      y: Math.round(geometry.y),
+      width: Math.round(geometry.width),
+      height: Math.round(geometry.height),
+    });
+  }, [geometry.x, geometry.y, geometry.width, geometry.height]);
+
+  const commit = (patch: Partial<typeof draft>) => {
+    const next = { ...draft, ...patch };
+    const width = Math.max(2, Math.round(next.width));
+    const height = Math.max(2, Math.round(next.height));
+    const x = Math.round(next.x);
+    const y = Math.round(next.y);
+    setDraft({ x, y, width, height });
+    if (
+      x === Math.round(geometry.x) &&
+      y === Math.round(geometry.y) &&
+      width === Math.round(geometry.width) &&
+      height === Math.round(geometry.height)
+    ) {
+      return;
+    }
+    onCommit({ kind: 'bbox', x, y, width, height });
+  };
+
+  const field = (
+    key: keyof typeof draft,
+    label: string,
+    min?: number,
+  ) => (
+    <label className="flex items-center gap-1.5 text-[11px] text-[var(--muted)]">
+      <span className="w-3 shrink-0">{label}</span>
+      <Input
+        type="number"
+        inputMode="numeric"
+        min={min}
+        value={draft[key]}
+        onChange={(event) => setDraft((prev) => ({ ...prev, [key]: Number(event.target.value) }))}
+        onBlur={() => commit({})}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            commit({});
+            event.currentTarget.blur();
+          }
+        }}
+        className="h-7 w-full px-1.5 text-xs tabular-nums"
+      />
+    </label>
+  );
+
+  return (
+    <section aria-label={t('studio.boxGeometry')} className="mb-3 space-y-1.5 rounded-lg border border-[var(--border)] p-2">
+      <h3 className="text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)]">
+        {t('studio.boxGeometry')}
+      </h3>
+      <div className="grid grid-cols-2 gap-1.5">
+        {field('x', 'X')}
+        {field('y', 'Y')}
+        {field('width', 'W', 2)}
+        {field('height', 'H', 2)}
+      </div>
+    </section>
   );
 }
 

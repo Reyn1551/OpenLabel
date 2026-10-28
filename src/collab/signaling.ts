@@ -289,3 +289,100 @@ export function parseInviteLink(input: string): InviteLink | null {
     reply: parsed.searchParams.get('r') === '1',
   };
 }
+/**
+ * Extracts the LAN address of the creating device from its own SDP.
+ *
+ * Host candidates carry the interface address (192.168.x.x and friends). That
+ * address is what another device on the same network can reach, which is what
+ * makes a one-click link possible without a server.
+ */
+export function lanAddressFromSdp(sdp: string): string | null {
+  const candidates = sdp.match(/a=candidate:[^\r\n]+/gu) ?? [];
+  let fallback: string | null = null;
+  for (const line of candidates) {
+    const parts = line.trim().split(/\s+/u);
+    // candidate:<foundation> <component> <transport> <priority> <address> <port> typ ...
+    const address = parts[4];
+    const port = parts[5];
+    if (!address || !port || !/^\d+$/u.test(port)) continue;
+    if (!/^\d{1,3}(\.\d{1,3}){3}$/u.test(address)) continue;
+    if (address.startsWith('127.')) continue;
+    if (address.startsWith('192.168.') || address.startsWith('10.') || /^172\.(1[6-9]|2\d|3[01])\./u.test(address)) {
+      return `${address}:${port}`;
+    }
+    if (!fallback) fallback = `${address}:${port}`;
+  }
+  return fallback;
+}
+
+/**
+ * All reachable interface addresses from an SDP, private ranges first.
+ *
+ * A machine can expose several interfaces (VPN, docker, Wi-Fi). The guest should
+ * try them in order rather than trust whichever candidate happened to come first.
+ */
+export function lanAddressesFromSdp(sdp: string): string[] {
+  const candidates = sdp.match(/a=candidate:[^\r\n]+/gu) ?? [];
+  const privateUsed: string[] = [];
+  const others: string[] = [];
+  for (const line of candidates) {
+    const parts = line.trim().split(/\s+/u);
+    const address = parts[4];
+    const port = parts[5];
+    if (!address || !port || !/^\d+$/u.test(port)) continue;
+    if (!/^\d{1,3}(\.\d{1,3}){3}$/u.test(address)) continue;
+    if (address.startsWith('127.')) continue;
+    const entry = `${address}:${port}`;
+    const isPrivate =
+      address.startsWith('192.168.') ||
+      address.startsWith('10.') ||
+      /^172\.(1[6-9]|2\d|3[01])\./u.test(address);
+    const bucket = isPrivate ? privateUsed : others;
+    if (!bucket.includes(entry)) bucket.push(entry);
+  }
+  return [...privateUsed, ...others];
+}
+
+/** A link that pairs without a reply: it names a rendezvous room on the LAN. */
+export function buildRoomLink(input: {
+  room: string;
+  host: string;
+  projectId: string;
+  name?: string;
+}): string {
+  const base = import.meta.env.BASE_URL || '/';
+  const url = new URL(`${base.replace(/\/+$/u, '')}/join`, window.location.origin);
+  url.searchParams.set('room', input.room);
+  url.searchParams.set('host', input.host);
+  url.searchParams.set('p', input.projectId);
+  if (input.name) url.searchParams.set('n', input.name);
+  return url.toString();
+}
+
+export interface RoomInvite {
+  room: string;
+  host: string;
+  projectId: string;
+  name: string;
+}
+
+export function parseRoomLink(input: string): RoomInvite | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(input, window.location.origin);
+  } catch {
+    return null;
+  }
+  if (!parsed.pathname.endsWith('/join')) return null;
+  const room = parsed.searchParams.get('room')?.trim();
+  const host = parsed.searchParams.get('host')?.trim();
+  const projectId = parsed.searchParams.get('p')?.trim();
+  if (!room || !host || !projectId) return null;
+  return { room, host, projectId, name: parsed.searchParams.get('n')?.trim() ?? '' };
+}
+
+/** Small, unambiguous room id; no characters that need URL escaping. */
+export function newRoomId(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(9));
+  return [...bytes].map((b) => b.toString(36).padStart(2, '0')).join('').slice(0, 12);
+}

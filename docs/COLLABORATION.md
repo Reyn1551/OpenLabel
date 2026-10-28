@@ -102,6 +102,27 @@ and the hub forwards claims and annotations without any of them being uploaded
 anywhere. The announcement is a handful of bytes; a reply only happens when
 something is actually missing.
 
+### Three ways to pair
+
+| Situation | Method | What travels |
+| --- | --- | --- |
+| Same WiFi / LAN | One-click invite link | SDP through a short-lived room on the host's own instance |
+| Different networks | Manual offer + reply codes | SDP through whatever chat you already use |
+| Never online together | Sync file | Operations only, no pixels |
+
+The one-click link needs the host's HTTP port to be reachable, so it is the LAN
+case. A browser cannot discover its own LAN address: Chrome replaces host
+candidates with mDNS names such as `8f2a-11c2.local`. The CLI therefore reports
+its real interfaces on `/__info`, and the link names those addresses plus the
+HTTP port. The guest's instance relays its offer request to the host's instance,
+which keeps the page talking only to its own origin and leaves the strict
+`connect-src 'self'` policy intact. Rooms hold SDP text in memory for ten
+minutes and are never written to disk.
+
+For devices in different places the manual codes are the reliable path. The
+signaling text goes through chat, and the media path is still direct: only the
+two browsers exchange annotation and image traffic.
+
 ### Pairing with a link
 
 The Team page produces a link instead of a raw code. A link points at

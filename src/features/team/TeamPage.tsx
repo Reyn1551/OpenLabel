@@ -43,7 +43,7 @@ export function TeamPage() {
   const [answerInput, setAnswerInput] = useState('');
   const [joinInput, setJoinInput] = useState('');
   const [joinAnswer, setJoinAnswer] = useState('');
-  const [busy, setBusy] = useState<'invite' | 'join' | 'finish' | 'import' | null>(null);
+  const [busy, setBusy] = useState<'invite' | 'manual' | 'join' | 'finish' | 'import' | null>(null);
   const logInput = useRef<HTMLInputElement>(null);
 
   const merged = useMemo(() => (snapshot ? materialize(snapshot.state) : null), [snapshot]);
@@ -146,7 +146,7 @@ export function TeamPage() {
     }
   };
 
-  const run = async (kind: 'invite' | 'join' | 'finish' | 'import', action: () => Promise<void>) => {
+  const run = async (kind: 'invite' | 'manual' | 'join' | 'finish' | 'import', action: () => Promise<void>) => {
     setBusy(kind);
     try {
       await action();
@@ -264,13 +264,26 @@ export function TeamPage() {
                 loading={busy === 'invite'}
                 onClick={() =>
                   void run('invite', async () => {
-                    setOffer(await runtime.createInviteLink());
+                    setOffer(await runtime.createRoomLink());
                   })
                 }
               >
                 {t('team.createLink')}
               </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                loading={busy === 'manual'}
+                onClick={() =>
+                  void run('manual', async () => {
+                    setOffer(await runtime.createInviteLink());
+                  })
+                }
+              >
+                {t('team.createManual')}
+              </Button>
             </div>
+            <p className="text-xs text-[var(--muted)]">{t('team.linkModes')}</p>
             {offer ? (
               <Field label={t('team.inviteLink')} htmlFor="team-offer">
                 <Textarea id="team-offer" readOnly rows={3} value={offer} onFocus={(event) => event.currentTarget.select()} />

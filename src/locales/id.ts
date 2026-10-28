@@ -56,6 +56,8 @@ export const id: Dictionary = {
   'dashboard.step.annotate': 'Anotasi',
   'dashboard.step.train': 'Latih',
   'dashboard.step.freeze': 'Bekukan',
+  'dashboard.joined': 'Bergabung',
+  'dashboard.rejoin': 'Gabung lagi',
   'dashboard.open': 'Buka proyek',
   'dashboard.lastUpdated': 'Diperbarui {date}',
 
@@ -118,6 +120,7 @@ export const id: Dictionary = {
   'studio.redo': 'Ulangi',
   'studio.deleteSelected': 'Hapus anotasi',
   'studio.duplicate': 'Duplikat anotasi',
+  'studio.boxGeometry': 'Posisi dan ukuran kotak',
   'studio.annotationList': 'Anotasi pada gambar ini',
   'studio.noAnnotations': 'Belum ada anotasi pada gambar ini.',
   'studio.hideAll': 'Sembunyikan anotasi',
@@ -310,6 +313,9 @@ export const id: Dictionary = {
   'team.linkTitle': 'Pasangkan perangkat',
   'team.linkHint':
     'Kirim tautan undangan ke orang lain. Mereka membukanya di mesin masing-masing, lalu mengirim balik tautan jawaban. Tanpa akun, tanpa server, tanpa unggahan.',
+  'team.createManual': 'Kode manual (jaringan berbeda)',
+  'team.linkModes':
+    'Tautan sekali klik bekerja di jaringan yang sama. Untuk perangkat di lokasi berbeda, buat kode manual dan tukarkan lewat chat: data tetap langsung antar perangkat.',
   'team.createLink': 'Buat tautan undangan',
   'team.inviteLink': 'Tautan undangan untuk dikirim',
   'team.replyPlaceholder': 'Tempel tautan jawaban yang Anda terima',

@@ -22,6 +22,9 @@ export const MAX_FRAME_BYTES = 1024 * 1024;
 
 const ICE_GATHERING_TIMEOUT_MS = 10_000;
 
+/** Queue depth above which a bulk sender pauses until the buffer drains. */
+const BACKPRESSURE_BYTES = 512 * 1024;
+
 const OP_KINDS: readonly OpKind[] = [
   'ann.put',
   'ann.del',
@@ -299,16 +302,37 @@ export class WebRtcTransport implements Transport {
 
   /**
    * Sends a non-CRDT control message and waits for the channel's buffer to
-   * drain. Without the wait, a multi-megabyte image would queue faster than the
-   * network can carry it and the data channel would close.
+   * drain.
+   *
+   * `bufferedAmountLowThreshold` plus the `bufferedamountlow` event is the
+   * documented backpressure pattern: polling `bufferedAmount` burns a timer per
+   * chunk and reacts later than the event does. A multi-megabyte image would
+   * otherwise queue faster than the network can carry it and close the channel.
    */
   async sendControl(message: unknown): Promise<void> {
     const channel = this.dataChannel;
-    if (this.closed || !channel || channel.readyState !== 'open') return;
-    channel.send(JSON.stringify(message));
-    while (!this.closed && channel.readyState === 'open' && channel.bufferedAmount > 512 * 1024) {
-      await new Promise((resolve) => setTimeout(resolve, 20));
+    if (this.closed || !channel || channel.readyState !== 'open') {
+      throw new Error('Data channel is not open.');
     }
+    channel.send(JSON.stringify(message));
+    if (channel.bufferedAmount <= BACKPRESSURE_BYTES) return;
+
+    await new Promise<void>((resolve) => {
+      let settled = false;
+      const finish = (): void => {
+        if (settled) return;
+        settled = true;
+        channel.removeEventListener('bufferedamountlow', finish);
+        channel.removeEventListener('close', finish);
+        resolve();
+      };
+      channel.bufferedAmountLowThreshold = BACKPRESSURE_BYTES / 4;
+      channel.addEventListener('bufferedamountlow', finish);
+      channel.addEventListener('close', finish);
+      // A channel that stays full because the peer vanished must not hang the
+      // pump forever.
+      setTimeout(finish, 30_000);
+    });
   }
 
   close(): void {

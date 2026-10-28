@@ -6,6 +6,7 @@ import { useT } from '@/ui/i18n';
 import { Button, Card, Field, Spinner, Textarea } from '@/ui/primitives';
 import { Page } from '@/features/shell/AppShell';
 import { ensureCollab } from '@/collab/runtime';
+import { rememberJoined } from '@/collab/remember';
 import { copyText } from '@/lib/clipboard';
 
 /**
@@ -30,6 +31,8 @@ export function JoinPage() {
   const started = useRef(false);
 
   const code = params.get('c') ?? '';
+  const room = params.get('room') ?? '';
+  const host = params.get('host') ?? '';
   const projectId = params.get('p') ?? '';
   const name = params.get('n') ?? '';
   const isReply = params.get('r') === '1';
@@ -38,8 +41,25 @@ export function JoinPage() {
     if (started.current) return;
     started.current = true;
 
-    if (!code || !projectId) {
+    if ((!code && !room) || !projectId) {
       setError(t('join.badLink'));
+      return;
+    }
+
+    if (room) {
+      // One-click flow: ask the host's instance for its offer, answer it, and
+      // post the answer back through our own instance. No paste required.
+      void (async () => {
+        try {
+          await ensureProjectShell({ id: projectId, name: name || undefined });
+          const runtime = await ensureCollab(projectId);
+          await runtime.joinRoom(room, host);
+          await rememberJoined(projectId, { room, host, name });
+          navigate(`/projects/${projectId}/team?joined=1`, { replace: true });
+        } catch (cause) {
+          setError(cause instanceof Error ? cause.message : String(cause));
+        }
+      })();
       return;
     }
 
@@ -54,11 +74,12 @@ export function JoinPage() {
         await ensureProjectShell({ id: projectId, name: name || undefined });
         const runtime = await ensureCollab(projectId);
         setReplyLink(await runtime.acceptInviteLink(code));
+        await rememberJoined(projectId, { name });
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : String(cause));
       }
     })();
-  }, [code, projectId, name, isReply, navigate, t]);
+  }, [code, room, host, projectId, name, isReply, navigate, t]);
 
   const copy = async () => {
     const ok = await copyText(replyLink);

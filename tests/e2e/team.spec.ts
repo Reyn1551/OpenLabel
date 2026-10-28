@@ -81,9 +81,9 @@ test('two separate devices pair with a link and share the dataset', async ({ bro
   await alicePage.goto(`${projectUrl}/team`);
   await expect(alicePage.getByRole('heading', { name: 'Team' })).toBeVisible();
 
-  // Alice creates the invite link. Nothing about it is hosted: it points at
-  // localhost so it opens Bob's own `npx openlabel`.
-  await alicePage.getByRole('button', { name: 'Create invite link' }).click();
+  // The manual flow: two codes exchanged by chat, for devices in different
+  // places that cannot reach each other's HTTP port.
+  await alicePage.getByRole('button', { name: 'Manual codes (different networks)' }).click();
   const inviteLink = await alicePage.locator('#team-offer').inputValue();
   expect(inviteLink).toContain('/join?c=');
   expect(inviteLink).toContain('127.0.0.1');

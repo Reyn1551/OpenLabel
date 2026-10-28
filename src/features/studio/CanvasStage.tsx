@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Annotation, ClassDef, Geometry, ImageMeta, Point, Prediction } from '@/core/types';
 import {
+  BBOX_HANDLES,
   bboxHandles,
   clamp,
   distanceToSegment,
@@ -49,7 +50,19 @@ type Interaction =
   | { mode: 'freehand'; points: Point[] }
   | { mode: 'prompt-box'; start: Point; current: Point };
 
-const HANDLE_RADIUS = 7;
+const HANDLE_RADIUS = 9;
+
+/** Which resize cursor matches each handle, so the target is discoverable. */
+const RESIZE_CURSORS: Record<string, string> = {
+  nw: 'nwse-resize',
+  se: 'nwse-resize',
+  ne: 'nesw-resize',
+  sw: 'nesw-resize',
+  n: 'ns-resize',
+  s: 'ns-resize',
+  e: 'ew-resize',
+  w: 'ew-resize',
+};
 const HIT_SLOP = 6;
 
 /**
@@ -352,8 +365,42 @@ export function CanvasStage(props: CanvasStageProps) {
       ctx.restore();
     }
 
-    // In-progress interactions.
+    // Alignment guides: long crosshair lines spanning the photo while a drawing
+    // tool is active. They make it easy to line a new box up with a feature on
+    // the far side of the image, which a small pointer crosshair cannot do.
     const active = interaction.current;
+    const guideTools = tool === 'box' || tool === 'polygon' || tool === 'keypoint' || tool === 'freehand' || tool === 'wand';
+    const guidePoint =
+      cursor ?? (active.mode === 'draw-box' || active.mode === 'prompt-box' ? active.current : null);
+    if (guideTools && guidePoint) {
+      const origin = screen({ x: 0, y: 0 });
+      const edge = screen({ x: image.width, y: image.height });
+      const gx = Math.round(screen(guidePoint).x) + 0.5;
+      const gy = Math.round(screen(guidePoint).y) + 0.5;
+      ctx.save();
+      ctx.setLineDash([5, 4]);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.beginPath();
+      ctx.moveTo(origin.x, gy);
+      ctx.lineTo(edge.x, gy);
+      ctx.moveTo(gx, origin.y);
+      ctx.lineTo(gx, edge.y);
+      ctx.stroke();
+      // A dark companion line keeps the guide visible on light photos.
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.setLineDash([5, 4]);
+      ctx.lineDashOffset = 5;
+      ctx.beginPath();
+      ctx.moveTo(origin.x, gy + 1);
+      ctx.lineTo(edge.x, gy + 1);
+      ctx.moveTo(gx + 1, origin.y);
+      ctx.lineTo(gx + 1, edge.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // In-progress interactions.
     if (active.mode === 'draw-box' || active.mode === 'prompt-box') {
       const a = screen(active.start);
       const b = screen(active.current);
@@ -463,6 +510,7 @@ export function CanvasStage(props: CanvasStageProps) {
     size.height,
     size.width,
     t,
+    tool,
     version,
     zoom,
   ]);
@@ -549,6 +597,23 @@ export function CanvasStage(props: CanvasStageProps) {
     }
     if (event.button !== 0) return;
 
+    // A drawn box stays resizable with any tool active. Grabbing a handle is more
+    // specific than starting a new shape, so it wins: after drawing a rectangle
+    // the handles are visible and the next drag on one must resize, not draw.
+    const grabbed = handleHit(point);
+    if (grabbed) {
+      const annotation = annotations.find((item) => item.id === grabbed.id)!;
+      onBeginEdit();
+      interaction.current = {
+        mode: 'resize',
+        id: annotation.id,
+        handle: grabbed.handle,
+        original: annotation.geometry,
+        start: point,
+      };
+      return;
+    }
+
     if (tool === 'wand') {
       interaction.current = { mode: 'prompt-box', start: point, current: point };
       setVersion((v) => v + 1);
@@ -592,19 +657,6 @@ export function CanvasStage(props: CanvasStageProps) {
     }
 
     // Select tool.
-    const handle = handleHit(point);
-    if (handle) {
-      const annotation = annotations.find((item) => item.id === handle.id)!;
-      onBeginEdit();
-      interaction.current = {
-        mode: 'resize',
-        id: annotation.id,
-        handle: handle.handle,
-        original: annotation.geometry,
-        start: point,
-      };
-      return;
-    }
     const hit = hitTest(point);
     if (hit) {
       onSelect(hit.annotation.id);
@@ -645,6 +697,21 @@ export function CanvasStage(props: CanvasStageProps) {
     if (tool === 'polygon' || draftPolygon.length > 0) setCursor(point);
 
     const active = interaction.current;
+
+    // Cursor feedback: without it, a handle looks like empty space and nobody
+    // discovers that a box can be resized.
+    if (active.mode === 'idle') {
+      const grabbed = handleHit(point);
+      canvas.style.cursor = grabbed
+        ? RESIZE_CURSORS[BBOX_HANDLES[grabbed.handle].key]
+        : tool === 'pan'
+          ? 'grab'
+          : tool === 'select'
+            ? hitTest(point)
+              ? 'move'
+              : 'default'
+            : 'crosshair';
+    }
     switch (active.mode) {
       case 'pan': {
         const dx = screenPoint.x - active.start.x;

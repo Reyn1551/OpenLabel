@@ -44,7 +44,9 @@ function pair(options: { serve?: Blob | null } = {}) {
       fromBtoA.push(message);
     },
     read: async () => null,
-    received: (hash, blob) => receivedByB.push({ hash, blob }),
+    received: (receivedHash, blob) => {
+      receivedByB.push({ hash: receivedHash, blob });
+    },
     onMissing: (hash) => missingAtB.push(hash),
   });
 
@@ -65,7 +67,7 @@ function pair(options: { serve?: Blob | null } = {}) {
     }
   };
 
-  return { a, b, drain, receivedByB, missingAtB, fromAtoB, fromBtoA };
+  return { a, b, drain, receivedByB, missingAtB, fromAtoB, fromBtoA, bSync: b };
 }
 
 describe('blob message validation', () => {
@@ -102,13 +104,21 @@ describe('chunked transfer', () => {
     const payload = new Uint8Array(BLOB_CHUNK_BYTES * 2 + 517);
     for (let index = 0; index < payload.length; index += 1) payload[index] = index % 251;
 
+    // The receiver verifies the payload against its content address, so the
+    // test must use the real SHA-256 of the bytes.
+    const digest = [...new Uint8Array(await crypto.subtle.digest('SHA-256', payload))]
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
     const harness = pair({ serve: new Blob([payload]) });
-    harness.b.request(HASH);
-    expect(harness.missingAtB).toEqual([HASH]);
+    harness.b.request(digest);
+    expect(harness.missingAtB).toEqual([digest]);
+    // The channel becomes usable only after pairing; requests made before that
+    // are replayed here instead of being lost.
+    harness.b.onOpen();
     await harness.drain();
 
     expect(harness.receivedByB).toHaveLength(1);
-    expect(harness.receivedByB[0].hash).toBe(HASH);
+    expect(harness.receivedByB[0].hash).toBe(digest);
     const bytes = new Uint8Array(await harness.receivedByB[0].blob.arrayBuffer());
     expect(bytes.length).toBe(payload.length);
     expect(bytes).toEqual(payload);
@@ -137,11 +147,22 @@ describe('chunked transfer', () => {
     harness.b.close();
   });
 
-  it('records every request for a hash it is missing', () => {
+  it('keeps a hash wanted across repeated requests instead of duplicating work', () => {
     const harness = pair({ serve: null });
     harness.b.request(HASH);
     harness.b.request(HASH);
-    expect(harness.missingAtB).toEqual([HASH, HASH]);
+    // Wanted state is a set: asking twice must not queue two transfers.
+    expect(harness.missingAtB).toEqual([HASH]);
+    expect(harness.bSync.missing()).toEqual([HASH]);
+    harness.a.close();
+    harness.b.close();
+  });
+
+  it('asks again when the channel opens, so a request that raced pairing is not lost', () => {
+    const harness = pair({ serve: new Blob([new Uint8Array(64)]) });
+    harness.b.request(HASH);
+    harness.b.onOpen();
+    expect(harness.bSync.missing()).toContain(HASH);
     harness.a.close();
     harness.b.close();
   });

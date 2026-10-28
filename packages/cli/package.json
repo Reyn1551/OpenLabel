@@ -1,6 +1,6 @@
 {
   "name": "openlabel",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Local-first image annotation studio. Runs entirely in your browser; start it with `npx openlabel`.",
   "license": "Apache-2.0",
   "type": "module",
