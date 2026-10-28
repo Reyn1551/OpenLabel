@@ -25,7 +25,7 @@
     "url": "git+https://github.com/Reyn1551/OpenLabel.git",
     "directory": "packages/cli"
   },
-  "homepage": "https://reyn1551.github.io/OpenLabel/",
+  "homepage": "https://github.com/Reyn1551/OpenLabel#readme",
   "bugs": "https://github.com/Reyn1551/OpenLabel/issues",
   "publishConfig": {
     "access": "public",

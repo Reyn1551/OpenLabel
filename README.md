@@ -480,4 +480,4 @@ browsers: images are read in place and exports are written straight to disk.
 ## Branching and releases
 
 See [docs/BRANCHING.md](docs/BRANCHING.md). `main` is protected by CI; features
-land through `feat/*` branches and merges. `main` deploys to GitHub Pages.
+land through `feat/*` branches and merges.

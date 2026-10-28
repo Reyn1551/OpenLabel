@@ -29,12 +29,8 @@ npx lighthouse http://127.0.0.1:4189/ --preset=desktop --quiet --output=json --o
 | Cumulative Layout Shift | 0 | 0 |
 
 Two consecutive local runs produced identical scores; the desktop run reports
-LCP 0.4 s.
-
-The deployed site (`https://reyn1551.github.io/OpenLabel/`, GitHub Pages, real
-network) also scores **100 / 100 / 100 / 100** on the mobile preset: FCP 1.0 s,
-LCP 1.7 s, Speed Index 1.3 s, TBT 50 ms, CLS 0, TTFB 270 ms. Accessibility, best practices, and SEO stay at 100 in every run, and the
-Playwright suite runs axe on the dashboard, studio, mobile studio, and team
+LCP 0.4 s. Accessibility, best practices, and SEO stay at 100 in every run, and
+the Playwright suite runs axe on the dashboard, studio, mobile studio, and team
 screens.
 
 ## Bundle

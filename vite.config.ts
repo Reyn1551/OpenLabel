@@ -82,7 +82,7 @@ function preloadLandingRoute(): Plugin {
 }
 
 export default defineConfig(({ command }) => ({
-  base: process.env.VITE_BASE ?? '/',
+  base: '/',
   plugins: [
     react(),
     tailwindcss(),

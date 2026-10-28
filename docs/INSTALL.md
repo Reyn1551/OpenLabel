@@ -6,14 +6,13 @@ the browser's IndexedDB on the machine that created it. "Installing" means
 serving the built `dist/` over HTTP(S); the container is just a convenient,
 reproducible way to do that.
 
-You have four options, in order of how much you want to manage:
+You have three options, in order of how much you want to manage:
 
 | Option | When to use | You run |
 | --- | --- | --- |
 | **`npx openlabel`** (recommended) | Fastest way to try it; Node ≥ 20 on the host | one command |
 | **Container** | A team, or a host with no Node / air-gapped | `docker run` or `docker compose up` |
 | **Static host** | You already run nginx/Caddy/S3 | copy `dist/` |
-| **GitHub Pages** | A personal demo, no team | already configured in this repo |
 
 ---
 
@@ -199,14 +198,6 @@ form-action 'self'; frame-ancestors 'none'
 
 `'wasm-unsafe-eval'` is required for the Rust feature engine; `blob:` for the
 worker and image previews.
-
----
-
-## 3. GitHub Pages
-
-Already configured: the `Deploy (GitHub Pages)` workflow builds on every push to
-`main` and serves the site at the repository's Pages URL. Set `VITE_BASE` to the
-project path if you are not using the default `/` base.
 
 ---
 
