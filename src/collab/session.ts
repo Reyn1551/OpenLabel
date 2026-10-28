@@ -92,6 +92,16 @@ export class CollabSession {
     }, HEARTBEAT_MS);
   }
 
+  /**
+   * Re-announces the current version vector.
+   *
+   * Used when a peer connection opens after the session was attached: without
+   * this, the first exchange waits for the next heartbeat.
+   */
+  announce(): void {
+    this.transport?.send([], versionVector(this.state));
+  }
+
   detach(): void {
     clearInterval(this.heartbeat);
     this.heartbeat = undefined;
@@ -137,6 +147,38 @@ export class CollabSession {
     if (status === 'connected') this.peers.set(peer, 'connected');
     else this.peers.delete(peer);
     this.emit();
+  }
+
+  /**
+   * A portable copy of everything this replica knows.
+   *
+   * The log is the source of truth, so a file of operations merges into another
+   * device with the same deterministic rules as a live connection. That makes
+   * convergence possible even when the two devices are never powered on at the
+   * same time: exchange the file by any means and both converge.
+   */
+  exportLog(): { projectId: string; exportedAt: number; ops: Op[] } {
+    return { projectId: this.projectId, exportedAt: Date.now(), ops: [...this.log] };
+  }
+
+  /**
+   * Merges operations from another replica and returns how many were new.
+   *
+   * Unknown operations are applied and persisted. Already-known ones are
+   * ignored, so importing the same file twice, or importing both directions, is
+   * harmless.
+   */
+  importOps(ops: Op[]): number {
+    const fresh = ops.filter((op) => !this.seen.has(op.oid));
+    if (fresh.length === 0) return 0;
+    for (const op of fresh) this.clock.observe(op.s);
+    this.state = applyOps(this.state, fresh);
+    this.log = this.log.concat(fresh);
+    for (const op of fresh) this.seen.add(op.oid);
+    void appendOps(this.projectId, fresh);
+    this.transport?.send(fresh);
+    this.emit();
+    return fresh.length;
   }
 
   private emit(): void {

@@ -10,6 +10,8 @@
 import type { PeerId } from './types';
 
 export const SIGNAL_PREFIX = 'OL1.';
+/** Deflate-compressed payload. SDP shrinks by roughly 70% this way. */
+export const SIGNAL_PREFIX_DEFLATE = 'OL2.';
 
 /** Upper bound on the decoded JSON payload; an SDP with host candidates is ~4 KiB. */
 export const MAX_SIGNAL_BYTES = 256 * 1024;
@@ -135,4 +137,155 @@ function assertSignal(value: unknown): Signal {
   }
 
   return { v: 1, kind: record.kind, peer: record.peer, sdp: record.sdp };
+}
+
+async function pipeThrough(
+  transform: CompressionStream | DecompressionStream,
+  bytes: Uint8Array<ArrayBuffer>,
+): Promise<Uint8Array<ArrayBuffer>> {
+  const writer = transform.writable.getWriter();
+  // Start reading before writing so a decode error surfaces as a rejection on
+  // this promise instead of an unhandled event on the stream.
+  const read = (async (): Promise<Uint8Array<ArrayBuffer>> => {
+    const reader = transform.readable.getReader();
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      total += value.length;
+      if (total > MAX_SIGNAL_BYTES) throw new Error('Invite payload exceeds the byte limit.');
+    }
+    const out = new Uint8Array(new ArrayBuffer(total));
+    let offset = 0;
+    for (const chunk of chunks) {
+      out.set(chunk, offset);
+      offset += chunk.length;
+    }
+    return out;
+  })();
+
+  try {
+    await writer.write(bytes);
+    await writer.close();
+  } catch {
+    // A truncated stream fails on the read side; that rejection is the signal.
+  }
+  return read;
+}
+
+async function deflate(bytes: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>> {
+  return pipeThrough(new CompressionStream('deflate-raw'), bytes);
+}
+
+async function inflate(bytes: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>> {
+  return pipeThrough(new DecompressionStream('deflate-raw'), bytes);
+}
+
+function canCompress(): boolean {
+  return typeof CompressionStream === 'function' && typeof DecompressionStream === 'function';
+}
+
+/**
+ * Encodes an offer/answer for a link.
+ *
+ * An SDP with a handful of candidates is a few kilobytes of very repetitive
+ * text, so deflate shrinks it enough to sit in a chat message comfortably. The
+ * prefix records which format was used, and decoding falls back to plain `OL1.`
+ * when the browser lacks the compression API.
+ */
+export async function encodeSignalLink(signal: Signal): Promise<string> {
+  const json = JSON.stringify(signal);
+  const bytes = encoder.encode(json);
+  if (bytes.length > MAX_SIGNAL_BYTES) {
+    throw new Error(
+      `Invite payload is ${bytes.length} bytes, which exceeds the ${MAX_SIGNAL_BYTES}-byte limit.`,
+    );
+  }
+  if (!canCompress()) return encodeSignal(signal);
+  const packed = await deflate(bytes);
+  if (packed.length > MAX_SIGNAL_BYTES) return encodeSignal(signal);
+  return SIGNAL_PREFIX_DEFLATE + toBase64Url(packed);
+}
+
+/** Decodes either format; the `OL1.` path is the synchronous decoder above. */
+export async function decodeSignalLink(code: string): Promise<Signal> {
+  if (typeof code !== 'string') throw new Error('Invite code must be a string.');
+  const normalized = code.replace(/\s+/gu, '');
+  if (normalized.startsWith(SIGNAL_PREFIX)) return decodeSignal(normalized);
+  if (!normalized.startsWith(SIGNAL_PREFIX_DEFLATE)) {
+    throw new Error(`Not an OpenLabel invite code: expected the "${SIGNAL_PREFIX}" prefix.`);
+  }
+
+  const encoded = normalized.slice(SIGNAL_PREFIX_DEFLATE.length);
+  if (encoded.length === 0) throw new Error('Invite code is empty after the prefix.');
+  if (!BASE64URL_PATTERN.test(encoded)) {
+    throw new Error('Invite code contains characters that are not valid base64url.');
+  }
+  if (encoded.length > MAX_ENCODED_LENGTH) {
+    throw new Error(`Invite code exceeds the ${MAX_ENCODED_LENGTH}-character limit.`);
+  }
+  if (!canCompress()) {
+    throw new Error('This browser cannot read compressed invite codes; update your browser.');
+  }
+
+  let json: string;
+  try {
+    json = decoder.decode(await inflate(fromBase64Url(encoded) as Uint8Array<ArrayBuffer>));
+  } catch {
+    throw new Error('Invite code is compressed but could not be decompressed; it may be truncated.');
+  }
+  if (encoder.encode(json).length > MAX_SIGNAL_BYTES) {
+    throw new Error(`Invite payload exceeds the ${MAX_SIGNAL_BYTES}-byte limit.`);
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(json);
+  } catch {
+    throw new Error('Invite code did not contain valid JSON; it may be truncated.');
+  }
+  return assertSignal(parsed);
+}
+
+/** Query parameters used by the one-click join route. */
+export interface InviteLink {
+  code: string;
+  projectId: string;
+  /** Project name, so the joining device can label the project immediately. */
+  name: string;
+  /** True when this link carries the answer back to the device that invited. */
+  reply: boolean;
+}
+
+/** Builds `…/join?c=<code>&p=<projectId>&n=<name>` on the app's own origin. */
+export function buildInviteLink(code: string, projectId: string, name = '', reply = false): string {
+  const base = import.meta.env.BASE_URL || '/';
+  const url = new URL(`${base.replace(/\/+$/u, '')}/join`, window.location.origin);
+  url.searchParams.set('c', code);
+  url.searchParams.set('p', projectId);
+  if (name) url.searchParams.set('n', name);
+  if (reply) url.searchParams.set('r', '1');
+  return url.toString();
+}
+
+/** Reads a join link, tolerating a code pasted with surrounding whitespace. */
+export function parseInviteLink(input: string): InviteLink | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(input, window.location.origin);
+  } catch {
+    return null;
+  }
+  if (!parsed.pathname.endsWith('/join')) return null;
+  const code = parsed.searchParams.get('c')?.trim();
+  const projectId = parsed.searchParams.get('p')?.trim();
+  if (!code || !projectId) return null;
+  return {
+    code,
+    projectId,
+    name: parsed.searchParams.get('n')?.trim() ?? '',
+    reply: parsed.searchParams.get('r') === '1',
+  };
 }

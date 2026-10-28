@@ -191,9 +191,10 @@ flowchart LR
 - **Native-speed features.** The pixel-bound stage runs in a 23 KiB
   Rust/WebAssembly module, with the TypeScript implementation kept as the
   reference and fallback. See [docs/ENGINE.md](docs/ENGINE.md).
-- **Offline team collaboration.** Pair devices over the local network with a
-  copy-pasted invite code, claim a slice of the images, and let annotations
-  converge without any server. See [docs/COLLABORATION.md](docs/COLLABORATION.md).
+- **Offline team collaboration.** Pair devices with an invite link, claim a slice
+  of the images, and let annotations and pixels converge without any server.
+  Devices that are never online together can still exchange a sync file. See
+  [docs/COLLABORATION.md](docs/COLLABORATION.md).
 - **Lighthouse 100.** Performance, accessibility, best practices, and SEO score
   100 on the mobile and desktop presets. The UI uses the React API through
   Preact's compatibility layer to keep the framework payload at 22 kB gzip. See
@@ -422,12 +423,13 @@ with an explicit error rather than silently degrading.
   proxied through or sent to an OpenLabel server.
 - The app shell is served as static files and cached by a service worker for
   offline use; serving an update may fetch new static assets.
-- **Team collaboration never uploads anything.** Pairing uses WebRTC with no
-  STUN or TURN servers, so only the two paired devices exchange traffic; the
-  invite code (SDP) contains the local IP addresses of the device that created
-  it, so share it only with the people you would tell those addresses to. Only
-  annotation metadata, claims, and review state are replicated; image bytes
-  stay on the devices that already have them.
+- **Team collaboration never uploads anything.** Pairing uses WebRTC with public
+  STUN servers only, so each browser can learn its own address and try a direct
+  connection; annotations and image bytes never pass through them, and there is
+  no relay. The invite link contains the local IP addresses of the device that
+  created it, so share it only with the people you would tell those addresses
+  to. Images and work are copied to paired devices, which then hold their own
+  full copy.
 
 See [SECURITY.md](SECURITY.md) for the threat model and reporting process.
 

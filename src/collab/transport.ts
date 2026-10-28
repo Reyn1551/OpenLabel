@@ -37,7 +37,19 @@ export interface TransportEvents {
   onOps(ops: Op[], vv: VersionVector): void;
   /** Called when a remote peer becomes reachable or goes away. */
   onPeer(peer: PeerId, state: 'connected' | 'disconnected'): void;
+  /** Called for a non-CRDT message, such as an image transfer chunk. */
+  onControl?(raw: unknown): void;
 }
+
+/**
+ * Public STUN servers only help a peer learn its own public address so the two
+ * browsers can attempt a direct connection across NAT. No image, annotation, or
+ * project data passes through them; if a direct path cannot be found the pair
+ * simply fails to connect rather than falling back to a relay.
+ */
+export const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
+  { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
+];
 
 export interface Transport {
   send(ops: Op[], vv?: VersionVector): void;
@@ -77,6 +89,15 @@ function isVersionVector(value: unknown): value is VersionVector {
   return Object.values(value as Record<string, unknown>).every(
     (counter) => typeof counter === 'number' && Number.isFinite(counter),
   );
+}
+
+/**
+ * Validates an untrusted list of operations, e.g. one loaded from a sync file.
+ * Returns `null` when any entry is malformed, so a bad file cannot half-apply.
+ */
+export function parseOps(value: unknown): Op[] | null {
+  if (!Array.isArray(value) || !value.every(isOp)) return null;
+  return value as Op[];
 }
 
 /**
@@ -194,18 +215,20 @@ export class WebRtcTransport implements Transport {
   readonly peerId: PeerId;
 
   private readonly events: TransportEvents;
+  private readonly iceServers: RTCIceServer[];
   private connection: RTCPeerConnection | null = null;
   private dataChannel: RTCDataChannel | null = null;
   private remotePeer: PeerId | null = null;
   private closed = false;
   private connected = false;
 
-  constructor(peerId: PeerId, events: TransportEvents) {
+  constructor(peerId: PeerId, events: TransportEvents, iceServers: RTCIceServer[] = DEFAULT_ICE_SERVERS) {
     if (typeof RTCPeerConnection === 'undefined') {
       throw new Error('RTCPeerConnection is unavailable; this transport needs a browser tab context.');
     }
     this.peerId = peerId;
     this.events = events;
+    this.iceServers = iceServers;
   }
 
   /** Initiator step 1: produce the offer code to hand to the other person. */
@@ -274,6 +297,20 @@ export class WebRtcTransport implements Transport {
     channel.send(JSON.stringify(makeFrame(this.peerId, ops, vv)));
   }
 
+  /**
+   * Sends a non-CRDT control message and waits for the channel's buffer to
+   * drain. Without the wait, a multi-megabyte image would queue faster than the
+   * network can carry it and the data channel would close.
+   */
+  async sendControl(message: unknown): Promise<void> {
+    const channel = this.dataChannel;
+    if (this.closed || !channel || channel.readyState !== 'open') return;
+    channel.send(JSON.stringify(message));
+    while (!this.closed && channel.readyState === 'open' && channel.bufferedAmount > 512 * 1024) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+  }
+
   close(): void {
     if (this.closed) return;
     this.closed = true;
@@ -310,9 +347,9 @@ export class WebRtcTransport implements Transport {
     if (this.closed) throw new Error('Transport is closed.');
     if (this.connection) return this.connection;
 
-    // An empty ICE server list is deliberate: host candidates only, so the
-    // session never depends on STUN/TURN infrastructure that does not exist.
-    const connection = new RTCPeerConnection({ iceServers: [] });
+    // Host candidates connect peers on one network; the configured STUN servers
+    // add a public candidate so a direct path can also be found across NAT.
+    const connection = new RTCPeerConnection({ iceServers: this.iceServers });
     connection.onconnectionstatechange = (): void => {
       if (connection.connectionState === 'failed' || connection.connectionState === 'closed') {
         this.markDisconnected();
@@ -327,12 +364,26 @@ export class WebRtcTransport implements Transport {
     channel.onopen = (): void => this.markConnected();
     channel.onclose = (): void => this.markDisconnected();
     channel.onmessage = (event: MessageEvent) => this.handleFrame(event.data);
+    // The responder can receive a channel that is already open, in which case
+    // `onopen` never fires and presence would stay pending forever.
+    if (channel.readyState === 'open') this.markConnected();
   }
 
   private handleFrame(data: unknown): void {
     if (this.closed || typeof data !== 'string') return;
     const frame = parseJsonFrame(data);
-    if (!frame || frame.from === this.peerId) return;
+    if (!frame) {
+      // Not a CRDT frame: blob transfer and future control messages live here.
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(data);
+      } catch {
+        return;
+      }
+      this.events.onControl?.(parsed);
+      return;
+    }
+    if (frame.from === this.peerId) return;
 
     // The remote peer id is only known once signaling (or the first frame) says so.
     if (!this.remotePeer) this.remotePeer = frame.from;

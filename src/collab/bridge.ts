@@ -1,5 +1,15 @@
 import { useStudio } from '@/core/store';
-import { getProject, listAnnotations, listImages, replaceImageAnnotations } from '@/core/repo';
+import {
+  ensureProjectShell,
+  getProject,
+  listAnnotations,
+  listAnnotationsForImage,
+  listImages,
+  replaceImageAnnotations,
+  saveImageMeta,
+  saveProject,
+  uid,
+} from '@/core/repo';
 import type { Annotation, Geometry, ImageMeta, Project } from '@/core/types';
 import { materialize, type CollabState } from './state';
 import type { CollabSession } from './session';
@@ -92,18 +102,29 @@ export interface StudioBridge {
   flush(): void;
 }
 
-export function startStudioBridge(session: CollabSession): StudioBridge {
+export interface StudioBridgeOptions {
+  /**
+   * Asks every connected peer for an image this device is missing. The runtime
+   * wires this to the blob channel of each WebRTC pair.
+   */
+  requestBlob?: (hash: string) => void;
+}
+
+export function startStudioBridge(session: CollabSession, options: StudioBridgeOptions = {}): StudioBridge {
   const projectId = session.projectId;
   const lastAnn = new Map<string, Map<string, number>>();
   const lastList = new Map<string, Annotation[]>();
   const lastClass = new Map<string, string>();
   const lastImage = new Set<ImageKey>();
+  let lastProjectJson = '';
   let applying = false;
   let lastApplied: CollabState | null = null;
   /** Remote state that arrived before the local project was seeded. */
   let pendingRemote: CollabState | null = null;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let seeded = false;
+  let imageCache: Map<string, ImageMeta> | null = null;
+  let imageCacheSize = -1;
 
   const makeOp = (kind: Op['k'], build: (stamp: Stamp, oid: string) => Op): Op => {
     const stamp = session.nextStamp();
@@ -125,6 +146,28 @@ export function startStudioBridge(session: CollabSession): StudioBridge {
   ): Op[] => {
     const ops: Op[] = [];
     const keyById = new Map<string, string>();
+
+    // Project metadata travels first so a peer that joins cold has a name, type
+    // and split before classes and annotations reference them.
+    const projectJson = JSON.stringify([project.name, project.type, project.description, project.split]);
+    if (lastProjectJson !== projectJson) {
+      lastProjectJson = projectJson;
+      ops.push(
+        makeOp('proj.put', (stamp, oid) => ({
+          oid,
+          k: 'proj.put',
+          s: stamp,
+          project: {
+            name: project.name,
+            type: project.type,
+            description: project.description,
+            classes: [],
+            split: project.split,
+          },
+        })),
+      );
+    }
+
     for (const cls of project.classes) {
       const key = classKey(cls.name);
       keyById.set(cls.id, key);
@@ -233,7 +276,7 @@ export function startStudioBridge(session: CollabSession): StudioBridge {
       schedule();
       const pending = pendingRemote;
       pendingRemote = null;
-      if (pending) applyRemote(pending);
+      if (pending) scheduleApply(pending);
     }
   };
 
@@ -245,8 +288,82 @@ export function startStudioBridge(session: CollabSession): StudioBridge {
     }, 0);
   }
 
-  /** Writes the merged view back into IndexedDB and the live studio state. */
-  const applyRemote = (state: CollabState) => {
+  /** Creates or extends the local project row from replicated metadata. */
+  const ensureLocalProject = async (
+    merged: ReturnType<typeof materialize>,
+  ): Promise<{ project: Project; classIdByKey: Map<string, string> }> => {
+    let project = await getProject(projectId);
+    if (!project) {
+      project = await ensureProjectShell({
+        id: projectId,
+        name: merged.project?.name,
+        type: merged.project?.type,
+        description: merged.project?.description,
+        split: merged.project?.split,
+      });
+    }
+
+    const byKey = new Map(project.classes.map((cls) => [classKey(cls.name), cls]));
+    let changed = false;
+    for (const cls of merged.classes) {
+      if (byKey.has(cls.id)) continue;
+      byKey.set(cls.id, { id: uid('cls'), name: cls.name, color: cls.color, keypoints: cls.keypoints });
+      changed = true;
+    }
+    if (changed) project = await saveProject({ ...project, classes: [...byKey.values()] });
+
+    return {
+      project,
+      classIdByKey: new Map([...byKey.entries()].map(([key, cls]) => [key, cls.id])),
+    };
+  };
+
+  /**
+   * Adds rows for images the peer has but this device does not. The pixels are
+   * requested separately; the row makes the work-split board and the annotation
+   * mappings usable immediately.
+   */
+  const ensureRemoteImages = async (
+    merged: ReturnType<typeof materialize>,
+  ): Promise<Map<string, ImageMeta>> => {
+    const byHash = new Map((await listImages(projectId)).map((image) => [image.hash, image]));
+    for (const [hash, meta] of merged.images) {
+      if (byHash.has(hash)) continue;
+      const image: ImageMeta = {
+        id: uid('img'),
+        projectId,
+        name: meta.name,
+        width: meta.width,
+        height: meta.height,
+        bytes: meta.bytes,
+        mime: meta.mime,
+        hash,
+        createdAt: meta.createdAt,
+        tags: [...meta.tags],
+        batchId: null,
+        split: null,
+        pHash: '',
+        descriptor: [],
+        annotationCount: 0,
+        note: '',
+      };
+      await saveImageMeta(image);
+      byHash.set(hash, image);
+      options.requestBlob?.(hash);
+    }
+    return byHash;
+  };
+
+  /**
+   * Writes the merged view into IndexedDB and, when the studio is mounted,
+   * mirrors it into the live store.
+   *
+   * IndexedDB is the source of truth here, not the store: the Team page and a
+   * reload both need the merged data, and neither implies a mounted studio. A
+   * peer that joins a project it has never opened gets the project row, its
+   * classes, its images and its annotations from this path.
+   */
+  const applyRemote = async (state: CollabState): Promise<void> => {
     // Applying before seeding would replace local annotations with a state that
     // does not contain them yet, deleting work that was never broadcast.
     if (!seeded) {
@@ -255,13 +372,17 @@ export function startStudioBridge(session: CollabSession): StudioBridge {
     }
     if (state === lastApplied) return;
     lastApplied = state;
-    const studio = useStudio.getState();
-    const project = studio.project;
-    if (!project || project.id !== projectId) return;
 
-    const byHash = new Map(studio.images.map((image) => [image.hash, image]));
-    const classIdByKey = new Map(project.classes.map((cls) => [classKey(cls.name), cls.id]));
     const merged = materialize(state);
+    const { project, classIdByKey } = await ensureLocalProject(merged);
+
+    // `listImages` walks every row, so rebuild the map only when the set of
+    // replicated images actually changed.
+    if (!imageCache || imageCacheSize !== merged.images.size) {
+      imageCache = await ensureRemoteImages(merged);
+      imageCacheSize = merged.images.size;
+    }
+    const byHash = imageCache;
 
     applying = true;
     try {
@@ -271,11 +392,20 @@ export function startStudioBridge(session: CollabSession): StudioBridge {
         const desired = list
           .map((synced) => toLocalAnnotation(synced, image, projectId, classIdByKey))
           .filter((annotation): annotation is Annotation => annotation !== null);
-        const current = studio.annotations[image.id] ?? [];
+
+        // The last write is already in the store, so comparing against it avoids
+        // one IndexedDB read per image on every frame.
+        const cached = lastList.get(image.id);
+        if (cached && sameAnnotations(cached, desired)) continue;
+
+        const current = cached ?? (await listAnnotationsForImage(image.id));
         if (sameAnnotations(current, desired)) continue;
         lastAnn.set(image.id, new Map(desired.map((annotation) => [annotation.id, annotation.updatedAt])));
         lastList.set(image.id, desired);
-        void replaceImageAnnotations(image.id, desired);
+        await replaceImageAnnotations(image.id, desired);
+
+        const studio = useStudio.getState();
+        if (studio.project?.id !== projectId) continue;
         useStudio.setState((prev) => ({
           annotations: { ...prev.annotations, [image.id]: desired },
           images: prev.images.map((candidate) =>
@@ -283,13 +413,24 @@ export function startStudioBridge(session: CollabSession): StudioBridge {
           ),
         }));
       }
+
+      const studio = useStudio.getState();
+      if (studio.project?.id === projectId && studio.project.classes.length !== project.classes.length) {
+        useStudio.setState({ project });
+      }
     } finally {
       applying = false;
     }
   };
 
+  /** Serializes apply passes so two fast frames cannot interleave writes. */
+  let applyingQueue: Promise<void> = Promise.resolve();
+  const scheduleApply = (state: CollabState): void => {
+    applyingQueue = applyingQueue.then(() => applyRemote(state)).catch(() => undefined);
+  };
+
   const unsubscribeStudio = useStudio.subscribe(schedule);
-  const unsubscribeSession = session.subscribe((snapshot) => applyRemote(snapshot.state));
+  const unsubscribeSession = session.subscribe((snapshot) => scheduleApply(snapshot.state));
   void seedFromDatabase();
 
   return {

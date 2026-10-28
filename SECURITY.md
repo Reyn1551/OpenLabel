@@ -58,13 +58,19 @@ downloaded through the browser. Nothing is uploaded by the application.
   modified code. Self-hosters should use HTTPS, control write access to the
   deployed origin, and avoid injecting third-party scripts.
 - **Peer pairing.** Team sessions are established by exchanging WebRTC offer and
-  answer codes out of band. Anyone who receives a code can attempt to connect,
-  so treat a code as a secret for the people you intend to include. The codes
-  contain the local IP addresses of the creating device, and the connection uses
-  host candidates only; no STUN or TURN provider learns anything. Replicated
-  operations are not signed per user: any paired peer can write annotations,
-  claims, and review state, which is the same authority a teammate has in the
-  app. Do not pair with untrusted peers.
+  answer links out of band. Anyone who receives a link can attempt to connect, so
+  treat it as a secret for the people you intend to include. Links contain the
+  local IP addresses of the creating device. Public STUN servers are used only so
+  each browser can discover its own public address; no annotation, image, or
+  project data is sent to them, and there is no TURN relay. Replicated operations
+  are not signed per user: any paired peer can write annotations, claims, and
+  review state, which is the same authority a teammate has in the app. Do not
+  pair with untrusted peers.
+- **Sync files.** A sync file is a plain JSON list of replicated operations. It
+  is not encrypted and it includes the peer ids of everyone who contributed, so
+  store and send it the way you would store the annotations themselves. Merging a
+  file from an untrusted source grants the same write authority as pairing with
+  that peer.
 - **Dependency and supply-chain risk.** The project uses an npm lockfile, CI
   installs with `npm ci`, and CodeQL runs on pushes, pull requests, and a weekly
   schedule. Review dependency additions; the auto-label engine is intentionally

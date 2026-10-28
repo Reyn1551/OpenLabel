@@ -17,7 +17,7 @@ export interface OpenLabelDB extends DBSchema {
   images: {
     key: string;
     value: ImageMeta;
-    indexes: { 'by-project': string; 'by-batch': string };
+    indexes: { 'by-project': string; 'by-batch': string; 'by-hash': string };
   };
   blobs: {
     key: string;
@@ -45,34 +45,40 @@ export interface OpenLabelDB extends DBSchema {
 }
 
 export const DB_NAME = 'openlabel';
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
 let dbPromise: Promise<IDBPDatabase<OpenLabelDB>> | null = null;
 
 export function getDB(): Promise<IDBPDatabase<OpenLabelDB>> {
   if (!dbPromise) {
     dbPromise = openDB<OpenLabelDB>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        const projects = db.createObjectStore('projects', { keyPath: 'id' });
-        projects.createIndex('by-updated', 'updatedAt');
+      upgrade(db, oldVersion, _newVersion, tx) {
+        if (oldVersion < 1) {
+          const projects = db.createObjectStore('projects', { keyPath: 'id' });
+          projects.createIndex('by-updated', 'updatedAt');
 
-        const images = db.createObjectStore('images', { keyPath: 'id' });
-        images.createIndex('by-project', 'projectId');
-        images.createIndex('by-batch', 'batchId');
+          const images = db.createObjectStore('images', { keyPath: 'id' });
+          images.createIndex('by-project', 'projectId');
+          images.createIndex('by-batch', 'batchId');
 
-        db.createObjectStore('blobs', { keyPath: 'id' });
+          db.createObjectStore('blobs', { keyPath: 'id' });
 
-        const annotations = db.createObjectStore('annotations', { keyPath: 'id' });
-        annotations.createIndex('by-image', 'imageId');
-        annotations.createIndex('by-project', 'projectId');
+          const annotations = db.createObjectStore('annotations', { keyPath: 'id' });
+          annotations.createIndex('by-image', 'imageId');
+          annotations.createIndex('by-project', 'projectId');
 
-        const versions = db.createObjectStore('versions', { keyPath: 'id' });
-        versions.createIndex('by-project', 'projectId');
+          const versions = db.createObjectStore('versions', { keyPath: 'id' });
+          versions.createIndex('by-project', 'projectId');
 
-        const models = db.createObjectStore('models', { keyPath: 'id' });
-        models.createIndex('by-project', 'projectId');
+          const models = db.createObjectStore('models', { keyPath: 'id' });
+          models.createIndex('by-project', 'projectId');
 
-        db.createObjectStore('meta');
+          db.createObjectStore('meta');
+        }
+        // Content hashes are how peers name images, so the lookup must be O(1).
+        if (oldVersion < 2) {
+          tx.objectStore('images').createIndex('by-hash', 'hash');
+        }
       },
     });
   }

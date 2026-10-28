@@ -12,6 +12,7 @@ import { decodeSignal, encodeSignal, MAX_SIGNAL_BYTES, type Signal } from '@/col
 import {
   BroadcastTransport,
   parseFrame,
+  parseOps,
   WebRtcTransport,
   type Frame,
   type Transport,
@@ -267,5 +268,21 @@ describe('frame validation', () => {
     expect(parseFrame({ ...frame, ops: [{ oid: 'x', k: 'img.done', s: { t: 'x' } }] })).toBeNull();
     expect(parseFrame({ ...frame, vv: null })).toBeNull();
     expect(parseFrame({ ...frame, vv: { [PEER_A]: Number.NaN } })).toBeNull();
+  });
+});
+describe('parseOps', () => {
+  it('accepts a list of valid operations', () => {
+    const ops: Op[] = [{ oid: 'x', k: 'img.done', s: { t: 1, p: PEER_A }, image: 'abc', done: true }];
+    expect(parseOps(ops)).toEqual(ops);
+    expect(parseOps([])).toEqual([]);
+  });
+
+  it('rejects anything that is not a complete list of valid operations', () => {
+    // A sync file is attacker-controlled input, so one bad row must reject the
+    // whole batch rather than half-applying it.
+    expect(parseOps('nope')).toBeNull();
+    expect(parseOps([{ oid: 'x', k: 'unknown', s: { t: 1, p: PEER_A } }])).toBeNull();
+    expect(parseOps([{ oid: 'x', k: 'img.done', s: { t: 1, p: PEER_A }, image: 'abc', done: true }, null])).toBeNull();
+    expect(parseOps([{ oid: '', k: 'img.done', s: { t: 1, p: PEER_A } }])).toBeNull();
   });
 });

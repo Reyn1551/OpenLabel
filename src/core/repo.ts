@@ -115,6 +115,46 @@ export async function getImage(id: string): Promise<ImageMeta | undefined> {
   return db.get('images', id);
 }
 
+/** Content-addressed lookup: peers name images by the SHA-256 of their bytes. */
+export async function getImageByHash(hash: string): Promise<ImageMeta | undefined> {
+  const db = await getDB();
+  return db.getFromIndex('images', 'by-hash', hash);
+}
+
+/**
+ * Creates a project row with a caller-supplied id.
+ *
+ * A peer that joins a shared project through an invite link has the project id
+ * before it has any of the project's data, so this is the only way to open the
+ * route and let replication fill the rest in.
+ */
+export async function ensureProjectShell(input: {
+  id: string;
+  name?: string;
+  type?: Project['type'];
+  description?: string;
+  split?: Project['split'];
+}): Promise<Project> {
+  const existing = await getProject(input.id);
+  if (existing) return existing;
+
+  const timestamp = now();
+  const project: Project = {
+    id: input.id,
+    name: input.name?.trim() || 'Shared project',
+    type: input.type ?? 'object-detection',
+    description: input.description ?? '',
+    classes: [],
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    split: input.split ? { ...input.split } : { train: 70, valid: 20, test: 10 },
+    autoLabel: { ...DEFAULT_AUTO_LABEL },
+  };
+  const db = await getDB();
+  await db.put('projects', project);
+  return project;
+}
+
 export async function getImageBlob(id: string): Promise<Blob | undefined> {
   const db = await getDB();
   const record = await db.get('blobs', id);

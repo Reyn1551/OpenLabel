@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, Circle, Copy, Users } from 'lucide-react';
 import type { Project } from '@/core/types';
 import { useT, useToast } from '@/ui/i18n';
@@ -8,10 +8,22 @@ import { Page } from '@/features/shell/AppShell';
 import { useCollab } from '@/collab/useCollab';
 import { materialize } from '@/collab/state';
 import { copyText } from '@/lib/clipboard';
+import { downloadBlob } from '@/lib/utils';
+import { parseInviteLink } from '@/collab/signaling';
+import { parseOps } from '@/collab/transport';
 import type { ImageKey, Op } from '@/collab/types';
 
 const CLAIM_BATCH = 10;
 const VISIBLE_ROWS = 100;
+
+/**
+ * Accepts either a bare `OL1.`/`OL2.` code or a full invite link, so a user can
+ * paste whichever they received.
+ */
+function toCode(input: string): string {
+  const trimmed = input.trim();
+  return parseInviteLink(trimmed)?.code ?? trimmed;
+}
 
 /**
  * Team page: pairing, presence, and the work split.
@@ -25,12 +37,14 @@ export function TeamPage() {
   const { t } = useT();
   const { notify } = useToast();
   const { runtime, snapshot, error } = useCollab(project.id);
+  const [searchParams] = useSearchParams();
 
   const [offer, setOffer] = useState('');
   const [answerInput, setAnswerInput] = useState('');
   const [joinInput, setJoinInput] = useState('');
   const [joinAnswer, setJoinAnswer] = useState('');
-  const [busy, setBusy] = useState<'invite' | 'join' | 'finish' | null>(null);
+  const [busy, setBusy] = useState<'invite' | 'join' | 'finish' | 'import' | null>(null);
+  const logInput = useRef<HTMLInputElement>(null);
 
   const merged = useMemo(() => (snapshot ? materialize(snapshot.state) : null), [snapshot]);
   const images = useMemo(() => {
@@ -86,7 +100,53 @@ export function TeamPage() {
     });
   };
 
-  const run = async (kind: 'invite' | 'join' | 'finish', action: () => Promise<void>) => {
+  /** Writes this replica's operation log to a file. */
+  const exportLog = () => {
+    if (!runtime) return;
+    const payload = runtime.session.exportLog();
+    downloadBlob(
+      new Blob([JSON.stringify(payload)], { type: 'application/json' }),
+      `${project.name.replace(/[^\w.-]+/gu, '-')}-sync.json`,
+    );
+  };
+
+  /**
+   * Merges a log exported by another device.
+   *
+   * This is the path that works when the two devices are never powered on at
+   * the same time: every device keeps a full replica, and any two logs merge
+   * deterministically.
+   */
+  const importLog = async (file: File) => {
+    if (!runtime) return;
+    setBusy('import');
+    try {
+      const text = await file.text();
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        throw new Error(t('team.logInvalid'));
+      }
+      const record = parsed as { projectId?: unknown; ops?: unknown };
+      if (typeof record.projectId !== 'string' || record.projectId !== project.id) {
+        throw new Error(t('team.logWrongProject'));
+      }
+      const ops = parseOps(record.ops);
+      if (!ops) throw new Error(t('team.logInvalid'));
+      const added = runtime.session.importOps(ops);
+      notify({ title: t('team.logMerged', { count: added }), tone: added > 0 ? 'success' : 'info' });
+    } catch (cause) {
+      notify({
+        title: t('team.error', { message: cause instanceof Error ? cause.message : String(cause) }),
+        tone: 'error',
+      });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const run = async (kind: 'invite' | 'join' | 'finish' | 'import', action: () => Promise<void>) => {
     setBusy(kind);
     try {
       await action();
@@ -99,6 +159,29 @@ export function TeamPage() {
       setBusy(null);
     }
   };
+
+  // A reply link lands here as `?answer=…`; completing it needs the pending
+  // offer from this tab, so a fresh tab simply reports that nothing is pending.
+  const answerParam = searchParams.get('answer');
+  const autoAnswered = useRef(false);
+  useEffect(() => {
+    if (!runtime || !answerParam || autoAnswered.current) return;
+    autoAnswered.current = true;
+    void (async () => {
+      setBusy('finish');
+      try {
+        await runtime.acceptAnswer(toCode(answerParam));
+        notify({ title: t('team.connectedNow'), tone: 'success' });
+      } catch (cause) {
+        notify({
+          title: t('team.error', { message: cause instanceof Error ? cause.message : String(cause) }),
+          tone: 'error',
+        });
+      } finally {
+        setBusy(null);
+      }
+    })();
+  }, [runtime, answerParam, notify, t]);
 
   if (error) {
     return (
@@ -172,8 +255,8 @@ export function TeamPage() {
         </Card>
 
         <Card>
-          <h2 className="text-sm font-semibold">{t('team.lanTitle')}</h2>
-          <p className="mt-1 text-xs text-[var(--muted)]">{t('team.lanHint')}</p>
+          <h2 className="text-sm font-semibold">{t('team.linkTitle')}</h2>
+          <p className="mt-1 text-xs text-[var(--muted)]">{t('team.linkHint')}</p>
           <div className="mt-3 space-y-3">
             <div className="flex flex-wrap gap-2">
               <Button
@@ -181,64 +264,95 @@ export function TeamPage() {
                 loading={busy === 'invite'}
                 onClick={() =>
                   void run('invite', async () => {
-                    setOffer(await runtime.createInvite());
+                    setOffer(await runtime.createInviteLink());
                   })
                 }
               >
-                {t('team.invite')}
+                {t('team.createLink')}
               </Button>
             </div>
             {offer ? (
-              <Field label={t('team.invitePlaceholder')} htmlFor="team-offer">
+              <Field label={t('team.inviteLink')} htmlFor="team-offer">
                 <Textarea id="team-offer" readOnly rows={3} value={offer} onFocus={(event) => event.currentTarget.select()} />
                 <Button size="sm" variant="ghost" className="mt-2" onClick={() => void copy(offer)}>
                   {t('common.copy')}
                 </Button>
               </Field>
             ) : null}
-            {offer ? (
-              <Field label={t('team.answerPlaceholder')} htmlFor="team-answer-in">
-                <Textarea
-                  id="team-answer-in"
-                  rows={3}
-                  value={answerInput}
-                  onChange={(event) => setAnswerInput(event.target.value)}
-                />
-                <Button
-                  size="sm"
-                  className="mt-2"
-                  disabled={answerInput.trim().length === 0}
-                  loading={busy === 'finish'}
-                  onClick={() => void run('finish', async () => runtime.acceptAnswer(answerInput.trim()))}
-                >
-                  {t('team.finish')}
-                </Button>
-              </Field>
-            ) : null}
 
-            <Field label={t('team.joinPlaceholder')} htmlFor="team-join">
-              <Textarea id="team-join" rows={3} value={joinInput} onChange={(event) => setJoinInput(event.target.value)} />
+            <Field label={t('team.replyPlaceholder')} htmlFor="team-answer-in">
+              <Textarea
+                id="team-answer-in"
+                rows={3}
+                value={answerInput}
+                onChange={(event) => setAnswerInput(event.target.value)}
+              />
               <Button
                 size="sm"
                 className="mt-2"
-                disabled={joinInput.trim().length === 0}
-                loading={busy === 'join'}
-                onClick={() => void run('join', async () => setJoinAnswer(await runtime.acceptInvite(joinInput.trim())))}
+                disabled={answerInput.trim().length === 0}
+                loading={busy === 'finish'}
+                onClick={() => void run('finish', async () => runtime.acceptAnswer(toCode(answerInput)))}
               >
-                {t('team.join')}
+                {t('team.finish')}
               </Button>
             </Field>
-            {joinAnswer ? (
-              <Field label={t('team.answer')} htmlFor="team-answer-out">
-                <Textarea id="team-answer-out" readOnly rows={3} value={joinAnswer} onFocus={(event) => event.currentTarget.select()} />
-                <Button size="sm" variant="ghost" className="mt-2" onClick={() => void copy(joinAnswer)}>
-                  {t('common.copy')}
+
+            <div className="border-t border-[var(--border)] pt-3">
+              <Field label={t('team.joinLinkPlaceholder')} htmlFor="team-join">
+                <Textarea id="team-join" rows={3} value={joinInput} onChange={(event) => setJoinInput(event.target.value)} />
+                <Button
+                  size="sm"
+                  className="mt-2"
+                  disabled={joinInput.trim().length === 0}
+                  loading={busy === 'join'}
+                  onClick={() => void run('join', async () => setJoinAnswer(await runtime.acceptInviteLink(toCode(joinInput))))}
+                >
+                  {t('team.join')}
                 </Button>
               </Field>
-            ) : null}
+              {joinAnswer ? (
+                <Field label={t('team.replyLink')} htmlFor="team-answer-out">
+                  <Textarea id="team-answer-out" readOnly rows={3} value={joinAnswer} onFocus={(event) => event.currentTarget.select()} />
+                  <Button size="sm" variant="ghost" className="mt-2" onClick={() => void copy(joinAnswer)}>
+                    {t('common.copy')}
+                  </Button>
+                </Field>
+              ) : null}
+            </div>
           </div>
         </Card>
       </div>
+
+      <Card className="mt-4">
+        <h2 className="text-sm font-semibold">{t('team.logTitle')}</h2>
+        <p className="mt-1 text-xs text-[var(--muted)]">{t('team.logHint')}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button size="sm" variant="ghost" onClick={exportLog}>
+            {t('team.logExport')}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            loading={busy === 'import'}
+            onClick={() => logInput.current?.click()}
+          >
+            {t('team.logImport')}
+          </Button>
+          <input
+            ref={logInput}
+            type="file"
+            accept="application/json,.json"
+            className="sr-only"
+            aria-label={t('team.logImport')}
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              event.currentTarget.value = '';
+              if (file) void importLog(file);
+            }}
+          />
+        </div>
+      </Card>
 
       <Card className="mt-4">
         <div className="flex flex-wrap items-center justify-between gap-3">

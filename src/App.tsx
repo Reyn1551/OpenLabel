@@ -21,6 +21,7 @@ const HealthPage = lazyNamed(() => import('@/features/health/HealthPage'), 'Heal
 const DeployPage = lazyNamed(() => import('@/features/deploy/DeployPage'), 'DeployPage');
 const SettingsPage = lazyNamed(() => import('@/features/settings/SettingsPage'), 'SettingsPage');
 const TeamPage = lazyNamed(() => import('@/features/team/TeamPage'), 'TeamPage');
+const JoinPage = lazyNamed(() => import('@/features/join/JoinPage'), 'JoinPage');
 
 export function App() {
   const hydrate = useSettings((state) => state.hydrate);
@@ -45,6 +46,7 @@ export function App() {
             <Routes>
               <Route element={<AppShell />}>
                 <Route index element={<DashboardPage />} />
+                <Route path="join" element={<JoinPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="projects/:projectId" element={<ProjectShell />}>
                   <Route index element={<StudioPage />} />
