@@ -55,6 +55,14 @@ const serve = sirv(DIST, {
   single: 'index.html',
   etag: true,
   setHeaders(res, pathname) {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
+    );
     const immutable = pathname.startsWith('/assets/') && /-[\w-]{8}\./.test(pathname);
     res.setHeader('Cache-Control', immutable ? 'public, max-age=31536000, immutable' : 'no-cache');
   },
