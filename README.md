@@ -63,12 +63,23 @@ that turns a handful of labels into a reviewable dataset.
 npx openlabel
 ```
 
-That's the whole install. It serves the app at <http://localhost:4173> and opens
-your browser. No account, no server, no upload: your projects live in that
-browser's IndexedDB, so come back to the same URL. Needs Node ≥ 20.
+That's the whole install. It serves the app on port 4173 and opens your browser.
+If 4173 is already taken, it steps to the next free port and prints the URL it
+chose. No account, no server, no upload: your projects live in that browser's
+IndexedDB, so come back to the same URL. Needs Node ≥ 20.
 
-Serve to other machines on your network: `npx openlabel --host 0.0.0.0`.
-Install it once as a command with `npm install -g openlabel`.
+### Install it as a command
+
+```bash
+npm install -g openlabel
+openlabel
+```
+
+The package ships a `bin` entry, so `-g` puts `openlabel` on your PATH. Without
+`-g`, npm only links the binary into the local `node_modules/.bin`, which your
+shell does not see.
+
+Serve to other machines on your network: `openlabel --host 0.0.0.0`.
 
 ### Docker (air-gapped / no Node on host)
 
