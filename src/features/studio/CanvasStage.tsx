@@ -52,6 +52,52 @@ type Interaction =
 const HANDLE_RADIUS = 7;
 const HIT_SLOP = 6;
 
+/**
+ * In-progress shapes are drawn on top of an arbitrary photo, so a single colour
+ * can vanish on a dark or light background. The draft colour is hot magenta —
+ * deliberately distinct from the teal accent so "not committed yet" is unambiguous
+ * — and every draft stroke is drawn as a black + white + colour "sandwich": one of
+ * the two contrast halos is always strong against the pixels underneath, so the
+ * dashed preview reads on any image.
+ */
+const DRAFT = '#ff2e88';
+
+/** Returns `color` (hex) with an alpha channel, for translucent draft fills. */
+function withAlpha(color: string, alpha: number): string {
+  const hex = color.replace('#', '');
+  const full = hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function strokeDraft(
+  ctx: CanvasRenderingContext2D,
+  color: string,
+  dash: number[],
+  width: number,
+  path: () => void,
+): void {
+  ctx.save();
+  ctx.setLineDash(dash);
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.lineWidth = width + 3;
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
+  path();
+  ctx.stroke();
+  ctx.lineWidth = width + 1.5;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+  path();
+  ctx.stroke();
+  ctx.lineWidth = width;
+  ctx.strokeStyle = color;
+  path();
+  ctx.stroke();
+  ctx.restore();
+}
+
 export function CanvasStage(props: CanvasStageProps) {
   const {
     image,
@@ -201,6 +247,7 @@ export function CanvasStage(props: CanvasStageProps) {
     if (!showAnnotations) return;
 
     const screen = (p: Point): Point => ({ x: pan.x + p.x * zoom, y: pan.y + p.y * zoom });
+    const draft = DRAFT;
 
     // Suggestions are drawn under committed annotations.
     for (const prediction of predictions) {
@@ -307,80 +354,93 @@ export function CanvasStage(props: CanvasStageProps) {
 
     // In-progress interactions.
     const active = interaction.current;
-    ctx.save();
-    ctx.strokeStyle = 'var(--accent)';
-    ctx.lineWidth = 1.75;
-    ctx.setLineDash([5, 4]);
     if (active.mode === 'draw-box' || active.mode === 'prompt-box') {
       const a = screen(active.start);
       const b = screen(active.current);
-      ctx.strokeRect(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(b.x - a.x), Math.abs(b.y - a.y));
-    }
-    if (active.mode === 'freehand' && active.points.length > 1) {
-      ctx.beginPath();
-      active.points.forEach((point, index) => {
-        const p = screen(point);
-        if (index === 0) ctx.moveTo(p.x, p.y);
-        else ctx.lineTo(p.x, p.y);
+      const x = Math.min(a.x, b.x);
+      const y = Math.min(a.y, b.y);
+      const w = Math.abs(b.x - a.x);
+      const h = Math.abs(b.y - a.y);
+      strokeDraft(ctx, draft, [5, 4], 1.75, () => ctx.strokeRect(x, y, w, h));
+    } else if (active.mode === 'freehand' && active.points.length > 1) {
+      strokeDraft(ctx, draft, [5, 4], 1.75, () => {
+        ctx.beginPath();
+        active.points.forEach((point, index) => {
+          const p = screen(point);
+          if (index === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
       });
-      ctx.stroke();
     }
-    ctx.restore();
 
     if (draftPolygon.length > 0) {
-      ctx.save();
-      ctx.strokeStyle = 'var(--accent)';
-      ctx.fillStyle = 'rgba(124, 92, 255, 0.12)';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([6, 4]);
-      ctx.beginPath();
-      draftPolygon.forEach((point, index) => {
-        const p = screen(point);
-        if (index === 0) ctx.moveTo(p.x, p.y);
-        else ctx.lineTo(p.x, p.y);
-      });
-      if (cursor) {
-        const p = screen(cursor);
-        ctx.lineTo(p.x, p.y);
-      }
-      ctx.stroke();
-      if (draftPolygon.length > 2) ctx.fill();
-      ctx.setLineDash([]);
-      for (const point of draftPolygon) {
-        const p = screen(point);
+      const path = () => {
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
-        ctx.fillStyle = 'var(--accent)';
+        draftPolygon.forEach((point, index) => {
+          const p = screen(point);
+          if (index === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        if (cursor) {
+          const p = screen(cursor);
+          ctx.lineTo(p.x, p.y);
+        }
+      };
+      ctx.save();
+      if (draftPolygon.length > 2) {
+        ctx.fillStyle = withAlpha(draft, 0.14);
+        path();
+        ctx.closePath();
         ctx.fill();
       }
       ctx.restore();
+      strokeDraft(ctx, draft, [6, 4], 2, path);
+      for (const point of draftPolygon) {
+        const p = screen(point);
+        ctx.save();
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = draft;
+        ctx.fill();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
+        ctx.stroke();
+        ctx.restore();
+      }
     }
 
     if (draftKeypoints.length > 0) {
-      ctx.save();
       for (const point of draftKeypoints) {
         const p = screen(point);
+        ctx.save();
         ctx.beginPath();
         ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
-        ctx.fillStyle = 'var(--accent)';
+        ctx.fillStyle = draft;
         ctx.fill();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
+        ctx.stroke();
+        ctx.restore();
       }
-      ctx.restore();
     }
 
     if (keyboardPlacement) {
       const a = screen(keyboardPlacement.start);
       const b = screen(keyboardPlacement.current);
+      const x = Math.min(a.x, b.x);
+      const y = Math.min(a.y, b.y);
+      const w = Math.abs(b.x - a.x);
+      const h = Math.abs(b.y - a.y);
+      strokeDraft(ctx, draft, [4, 3], 2, () => ctx.strokeRect(x, y, w, h));
       ctx.save();
-      ctx.strokeStyle = 'var(--accent)';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([4, 3]);
-      ctx.strokeRect(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(b.x - a.x), Math.abs(b.y - a.y));
-      ctx.setLineDash([]);
       ctx.beginPath();
       ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
-      ctx.fillStyle = 'var(--accent)';
+      ctx.fillStyle = draft;
       ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
+      ctx.stroke();
       ctx.restore();
     }
   }, [

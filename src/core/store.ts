@@ -433,7 +433,7 @@ export const useStudio = create<StudioState>((set, get) => ({
     if (!project) return null;
     const trimmed = name.trim();
     if (!trimmed) return null;
-    const colorPool = ['#f97316', '#3b82f6', '#22c55e', '#eab308', '#a855f7', '#ec4899', '#14b8a6', '#ef4444'];
+    const colorPool = ['#d55e00', '#e69f00', '#f0e442', '#3f8f52', '#0072b2', '#56b4e9', '#cc79a7', '#4a5058'];
     const cls: ClassDef = {
       id: uid('cls'),
       name: trimmed,

@@ -17,9 +17,15 @@ export const uid = (prefix = ''): string => {
 
 export const now = (): number => Date.now();
 
+/**
+ * Okabe–Ito colour-blind-safe palette (Wong, Nat Methods 2011), with the teal
+ * and black slots swapped out: teal would collide with the accent and black is
+ * invisible on dark photos. Hue is never the only channel — every shape also
+ * renders its class name — so the palette stays legible for deuteranopia.
+ */
 const PALETTE = [
-  '#f97316', '#3b82f6', '#22c55e', '#eab308', '#a855f7', '#ec4899',
-  '#14b8a6', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f43f5e',
+  '#d55e00', '#e69f00', '#f0e442', '#3f8f52',
+  '#0072b2', '#56b4e9', '#cc79a7', '#4a5058',
 ];
 
 export function classColor(index: number): string {
