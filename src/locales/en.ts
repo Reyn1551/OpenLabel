@@ -77,6 +77,10 @@ export const en = {
   'newProject.nameRequired': 'Give the project a name.',
 
   'studio.images': 'Images',
+  'studio.hideRail': 'Hide image list',
+  'studio.showRail': 'Show image list',
+  'studio.hideInspector': 'Hide inspector',
+  'studio.showInspector': 'Show inspector',
   'studio.openFolder': 'Open folder',
   'studio.openFolderHint': 'Read images from a folder on disk without importing copies',
   'studio.addImages': 'Add images',

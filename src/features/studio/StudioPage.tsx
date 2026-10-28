@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ImagePlus, Images, PanelRight, Upload } from 'lucide-react';
+import { ImagePlus, Images, PanelLeft, PanelRight, Upload } from 'lucide-react';
 import type { MessageKey } from '@/locales/en';
 import type { Geometry } from '@/core/types';
 import { useStudio, type Tool } from '@/core/store';
@@ -73,7 +73,22 @@ export function StudioPage() {
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<'images' | 'inspector' | null>(null);
+  const [railOpen, setRailOpen] = useState(() => localStorage.getItem('openlabel.rail') !== 'closed');
+  const [inspectorOpen, setInspectorOpen] = useState(() => localStorage.getItem('openlabel.inspector') !== 'closed');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const toggleRail = useCallback(() => {
+    setRailOpen((open) => {
+      localStorage.setItem('openlabel.rail', open ? 'closed' : 'open');
+      return !open;
+    });
+  }, []);
+  const toggleInspector = useCallback(() => {
+    setInspectorOpen((open) => {
+      localStorage.setItem('openlabel.inspector', open ? 'closed' : 'open');
+      return !open;
+    });
+  }, []);
 
   useEffect(() => {
     void load(projectId);
@@ -321,9 +336,11 @@ export function StudioPage() {
     <div className="flex h-full min-h-0 flex-col">
       {region}
       <div className="flex min-h-0 flex-1">
-        <div className="hidden w-64 shrink-0 lg:block">
-          <ImageRail onUpload={openPicker} uploading={uploading} onOpenFolder={folderSupport.supported ? () => void openFolder() : undefined} />
-        </div>
+        {railOpen ? (
+          <div className="hidden w-64 shrink-0 lg:block">
+            <ImageRail onUpload={openPicker} uploading={uploading} onOpenFolder={folderSupport.supported ? () => void openFolder() : undefined} />
+          </div>
+        ) : null}
 
         <div className="flex min-w-0 flex-1 flex-col">
           <Toolbar
@@ -340,6 +357,27 @@ export function StudioPage() {
               <PanelRight className="size-4" aria-hidden />
             </IconButton>
           </div>
+          <div className="hidden items-center gap-1 border-b border-[var(--border)] bg-[var(--surface)] px-2 py-1 lg:flex">
+            <IconButton
+              label={railOpen ? t('studio.hideRail') : t('studio.showRail')}
+              size="sm"
+              active={railOpen}
+              onClick={toggleRail}
+            >
+              <PanelLeft className="size-4" aria-hidden />
+            </IconButton>
+            <span className="truncate text-xs text-[var(--muted)]">{image?.name ?? t('studio.noImages')}</span>
+            <span className="ml-auto hidden min-[1280px]:inline-flex">
+              <IconButton
+                label={inspectorOpen ? t('studio.hideInspector') : t('studio.showInspector')}
+                size="sm"
+                active={inspectorOpen}
+                onClick={toggleInspector}
+              >
+                <PanelRight className="size-4" aria-hidden />
+              </IconButton>
+            </span>
+          </div>
           <div className="relative min-h-0 flex-1">{canvas}</div>
           <StatusBar
             name={image?.name}
@@ -350,9 +388,11 @@ export function StudioPage() {
           />
         </div>
 
-        <div className="hidden w-80 shrink-0 xl:block">
-          <InspectorPanel image={image} />
-        </div>
+        {inspectorOpen ? (
+          <div className="hidden w-80 shrink-0 xl:block">
+            <InspectorPanel image={image} />
+          </div>
+        ) : null}
       </div>
 
       <input

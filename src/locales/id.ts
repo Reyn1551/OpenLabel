@@ -79,6 +79,10 @@ export const id: Dictionary = {
   'newProject.nameRequired': 'Beri nama proyek.',
 
   'studio.images': 'Gambar',
+  'studio.showRail': 'Tampilkan daftar gambar',
+  'studio.hideRail': 'Sembunyikan daftar gambar',
+  'studio.showInspector': 'Tampilkan inspektur',
+  'studio.hideInspector': 'Sembunyikan inspektur',
   'studio.openFolder': 'Buka folder',
   'studio.openFolderHint': 'Baca gambar dari folder di disk tanpa mengimpor salinan',
   'studio.addImages': 'Tambah gambar',

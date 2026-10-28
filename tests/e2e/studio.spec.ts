@@ -97,6 +97,28 @@ test('switching images keeps the canvas mounted', async ({ page }) => {
   }
 });
 
+test('studio rails collapse and persist', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await loadDemo(page);
+
+  const rail = page.getByRole('heading', { name: /Images \(\d+\)/ });
+  await expect(rail).toBeVisible();
+
+  await page.getByRole('button', { name: 'Hide image list' }).click();
+  await expect(rail).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Show image list' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Show image list' }).click();
+  await expect(rail).toBeVisible();
+
+  // The choice survives a reload.
+  await page.getByRole('button', { name: 'Hide image list' }).click();
+  await expect(rail).toBeHidden();
+  await page.reload();
+  await expect(page.getByRole('application')).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole('button', { name: 'Show image list' })).toBeVisible();
+});
+
 test('mobile layout exposes panels through accessible dialogs', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await loadDemo(page);
