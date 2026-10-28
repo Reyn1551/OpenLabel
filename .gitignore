@@ -29,3 +29,8 @@ logs/
 npm-debug.log*
 # Rust build output
 engine/target/
+
+# npm package build output
+packages/cli/node_modules/
+packages/cli/*.tgz
+packages/cli/dist/

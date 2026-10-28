@@ -1,0 +1,36 @@
+{
+  "name": "openlabel",
+  "version": "0.1.0",
+  "description": "Local-first image annotation studio. Runs entirely in your browser — `npx openlabel`.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": { "openlabel": "bin/openlabel.js" },
+  "files": ["bin/", "dist/", "README.md", "LICENSE"],
+  "engines": { "node": ">=20.0.0" },
+  "dependencies": { "sirv": "^3.0.2" },
+  "keywords": [
+    "annotation",
+    "image-annotation",
+    "labeling",
+    "labeling-tool",
+    "dataset",
+    "coco",
+    "yolo",
+    "local-first",
+    "offline",
+    "pwa"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Reyn1551/OpenLabel.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://reyn1551.github.io/OpenLabel/",
+  "bugs": "https://github.com/Reyn1551/OpenLabel/issues",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true,
+    "registry": "https://registry.npmjs.org/"
+  },
+  "prepublishOnly": "node -e \"process.exit(require('fs').existsSync('dist/index.html')?0:(console.error('dist/ missing: run npm run build:npm'),1))\""
+}

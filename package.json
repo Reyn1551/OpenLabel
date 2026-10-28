@@ -18,7 +18,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "verify": "npm run lint && npm run test && npm run build && npm run test:e2e",
-    "build:engine": "cargo build --release --target wasm32-unknown-unknown --manifest-path engine/Cargo.toml && cp engine/target/wasm32-unknown-unknown/release/openlabel_engine.wasm src/autolabel/engine.wasm"
+    "build:engine": "cargo build --release --target wasm32-unknown-unknown --manifest-path engine/Cargo.toml && cp engine/target/wasm32-unknown-unknown/release/openlabel_engine.wasm src/autolabel/engine.wasm",
+    "build:npm": "tsc --noEmit && vite build --outDir packages/cli/dist --emptyOutDir --sourcemap false"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.3",
