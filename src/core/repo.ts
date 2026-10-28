@@ -20,8 +20,8 @@ export const now = (): number => Date.now();
 /**
  * Okabe–Ito colour-blind-safe palette (Wong, Nat Methods 2011), with the teal
  * and black slots swapped out: teal would collide with the accent and black is
- * invisible on dark photos. Hue is never the only channel — every shape also
- * renders its class name — so the palette stays legible for deuteranopia.
+ * invisible on dark photos. Hue is never the only channel: every shape also
+ * renders its class name, so the palette stays legible for deuteranopia.
  */
 const PALETTE = [
   '#d55e00', '#e69f00', '#f0e442', '#3f8f52',

@@ -4,8 +4,8 @@ This is the single source of truth for OpenLabel's visual language and the
 research-backed plan for the studio redesign. The token values are implemented in
 `src/styles/index.css`; the component rules are implemented in
 `src/ui/primitives.tsx`. The "Roadmap" section is the prioritized backlog from
-four research passes (competitor IA, community pain, design craft, self-hosting)
-— see the citations at the end.
+four research passes (competitor IA, community pain, design craft, self-hosting);
+see the citations at the end.
 
 ## Principles
 
@@ -19,7 +19,7 @@ four research passes (competitor IA, community pain, design craft, self-hosting)
    operation of every flow, and a Lighthouse score of 100 in all four categories
    as the release gate.
 4. **Density is a setting, not a bug.** Compact / default / comfortable shift
-   control size and padding only — never font size.
+   control size and padding only, never font size.
 
 ## Tokens
 
@@ -28,7 +28,7 @@ so light and dark share one perceptual scale. Every text pair was checked
 against WCAG 2.2 (4.5:1 for text, 3:1 for non-text UI). The method is the WCAG
 relative-luminance formula `(L1 + 0.05) / (L2 + 0.05)`, compared unrounded.
 
-### Light — warm paper
+### Light: warm paper
 
 Not pure white: `#fff`-on-`#000` at 21:1 blooms (halation), which reads as
 smeared, vibrating text over long sessions. A warm off-white keeps reading
@@ -42,7 +42,7 @@ comfortable and keeps the elevation ladder intact.
 | `--surface-3` | `#dedad2` | pressed, wells |
 | `--border` | `#d3cec4` | decorative divider only (1.39:1, never a control edge) |
 | `--border-strong` | `#8a8377` | control boundary (3.33:1) |
-| `--fg` | `#1a1815` | primary text (17.1:1 on surface — halation budget, not 21:1) |
+| `--fg` | `#1a1815` | primary text (17.1:1 on surface, halation budget, not 21:1) |
 | `--muted` | `#5a544b` | secondary text (7.2:1 on surface) |
 | `--accent` | `#0e6e66` | primary action, focus ring (5.9:1 on surface) |
 | `--accent-fg` | `#ffffff` | text on the accent (6.1:1) |
@@ -51,7 +51,7 @@ comfortable and keeps the elevation ladder intact.
 | `--success-bg` / `--warning-bg` / `--error-bg` | `#ddf3e8` / `#fbeeda` / `#fbe4e1` | status chip fills |
 | `--draft` | `#ff2e88` | in-progress canvas shapes (see below) |
 
-### Dark — warm graphite
+### Dark: warm graphite
 
 Not pure black: `#000` destroys the elevation ladder (you cannot step down from
 it) and causes black-smear during scroll on OLED. A warm graphite at L* 6.4
@@ -80,13 +80,13 @@ The full block, including elevation, motion, and control-size tokens, is in
 
 ### Accent: why teal, not the AI purple
 
-The previous accent was indigo/violet (`#4f46e5` / `#8b7cff`), which sits in the
-hue-245–255 band that the Tailwind default scale made the path of least
-resistance — and that every model trained on that corpus reproduces. It reads as
+The previous accent was indigo/violet (`#4f46e5` / `#8b7cff`). That sits in the
+hue-245–255 band, the path of least resistance for the Tailwind default scale,
+and every model trained on that corpus reproduces it. It reads as
 "AI-generated" on sight. Teal (`#0e6e66` / `#2fbfac`) was chosen by elimination:
 
 - **No semantic collision.** It is not success (green), not warning (amber),
-  not destructive (red), and not in the 8-class palette — so the accent can
+  not destructive (red), and not in the 8-class palette, so the accent can
   carry "the thing you are manipulating right now" without ambiguity.
 - **Empty territory.** Linear is indigo, Figma/GitHub/Notion/Vercel are blue,
   Datadog purple, Grafana orange, Raycast red. Teal is the one hue the peer set
@@ -100,7 +100,7 @@ resistance — and that every model trained on that corpus reproduces. It reads 
 
 A single-hue draft cannot work: for a stroke to hit 3:1 against black it needs
 low luminance, against white it needs high luminance, and against mid-gray it
-needs either extreme — no single luminance satisfies all three, and photos
+needs either extreme. No single luminance satisfies all three, and photos
 contain the whole range. So the draft is drawn as a **black + white + colour
 "sandwich"**: a black halo, a white halo, then the colour on top. For any
 background luminance `L`, `max(contrast(white, L), contrast(black, L))` is
@@ -133,7 +133,7 @@ collide with the accent and black is invisible on dark photos.
 | 8 | `#4a5058` | charcoal (unlabeled / other) |
 
 Verified CIE ΔE00 over all 28 pairs: normal-vision min 20.4, deuteranopia min
-12.7, protanopia min 13.2 — the ceiling of what 8 hues can do. **Hue is never
+12.7, protanopia min 13.2, the ceiling of what 8 hues can do. **Hue is never
 the only channel:** every shape also renders its class name (label chip), and
 the sidebar swatches carry a `1px inset 0 0 0 var(--border-strong)` ring, so
 `#f0e442` (1.28:1 on a light surface) and `#4a5058` (2.13:1 on a dark surface)
@@ -184,7 +184,7 @@ hit radius, and every drag has a single-pointer alternative (arrow keys nudge
 
 Durations: 100ms hover/press, 150ms state, 200ms menu/dialog enter, 250ms
 drawer. Only `opacity`, `transform`, `background-color`, `border-color`, `color`,
-and `box-shadow` animate — never `width/height/top/left`, never `filter: blur()`,
+and `box-shadow` animate, never `width/height/top/left`, never `filter: blur()`,
 never `transition: all`. No entrance animation on the LCP element.
 `prefers-reduced-motion` collapses everything to 1ms.
 
@@ -207,52 +207,52 @@ Ranked by impact ÷ effort. Each item names the evidence that motivated it.
 
 ### Studio layout (from the competitor IA study)
 
-- **R1 — Collapsible, persisted rails; tools on a vertical rail.** At 1280px the
+- **R1: Collapsible, persisted rails; tools on a vertical rail.** At 1280px the
   two fixed rails eat 45% of the canvas. CVAT splits tools (left) from objects
   (right); Label Studio's panels are collapsible and detachable.
-- **R2 — Auto Label is a first-class tool with a visible suggestion queue**, not
+- **R2: Auto Label is a first-class tool with a visible suggestion queue**, not
   the second tab of the right panel. CVAT's magic wand and Roboflow's Label
   Assist both live in the editor with an explicit accept/reject step.
-- **R3 — A project-level Dataset view** (thumbnail grid + facet chips + bulk
+- **R3: A project-level Dataset view** (thumbnail grid + facet chips + bulk
   actions); the studio rail becomes a compact filmstrip. Encord's queue and
   Roboflow's dataset search are the models.
-- **R4 — Explicit null/empty state** (`N` marks an image null) so "not started"
+- **R4: Explicit null/empty state** (`N` marks an image null) so "not started"
   and "verified empty" are distinct. Roboflow ships a Mark Null tool and reports
   null coverage separately.
-- **R6 — Freeze is a gate that reads Health** and diffs against the previous
+- **R6: Freeze is a gate that reads Health** and diffs against the previous
   version.
-- **R8 — Health charts are filters**, not posters: every bar deep-links to the
+- **R8: Health charts are filters**, not posters: every bar deep-links to the
   matching images.
-- **R11 — Claim is a lease lock** (owner + heartbeat + TTL), not live cursors,
+- **R11: Claim is a lease lock** (owner + heartbeat + TTL), not live cursors,
   because a server-free link cannot promise a live channel.
 
 ### Deliberately not copied
 
 Visual workflow builders (V7), per-user analytics (Roboflow Insights, Scale
 Quality), configurable XML layouts (Label Studio), multi-image grid canvases
-(Supervisely), and plugin panels — each is a server-side surface with no
+(Supervisely), and plugin panels. Each is a server-side surface with no
 local-first analogue.
 
 ## Sources
 
-- WCAG 2.2: SC 1.4.3, 1.4.11, 2.5.8, 2.5.7, 2.4.11, 2.4.13, 2.1.4 —
+- WCAG 2.2 (SC 1.4.3, 1.4.11, 2.5.8, 2.5.7, 2.4.11, 2.4.13, 2.1.4):
   https://www.w3.org/WAI/WCAG22/
-- W3C APG: Tabs, Dialog, Grid — https://www.w3.org/WAI/ARIA/apg/patterns/
-- Vercel Geist typography and colour — https://vercel.com/geist/
-- Radix Colors scale — https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale
-- Material 3 density — https://m3.material.io/foundations/layout/grids-spacing/density
-- GitHub Primer size tokens — https://primer.style/product/primitives/size/
-- NN/g: skeleton screens, animation duration, empty states — https://www.nngroup.com/
-- Linear: quality, design reset — https://linear.app/now/quality-wednesdays
-- Roboflow docs (annotate, keyboard, team, health, versions) —
+- W3C APG patterns (Tabs, Dialog, Grid): https://www.w3.org/WAI/ARIA/apg/patterns/
+- Vercel Geist typography and colour: https://vercel.com/geist/
+- Radix Colors scale: https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale
+- Material 3 density: https://m3.material.io/foundations/layout/grids-spacing/density
+- GitHub Primer size tokens: https://primer.style/product/primitives/size/
+- NN/g on skeleton screens, animation duration, empty states: https://www.nngroup.com/
+- Linear, on quality and design reset: https://linear.app/now/quality-wednesdays
+- Roboflow docs (annotate, keyboard, team, health, versions):
   https://docs.roboflow.com/datasets/annotate/annotate/use-roboflow-annotate
-- Label Studio — https://labelstud.io/guide/labeling
-- CVAT — https://docs.cvat.ai/docs/annotation/annotation-editor/
-- Encord — https://docs.encord.com/platform-documentation/Annotate/annotate-label-editor/annotate-label-editor-annotate
-- Supervisely — https://docs.supervisely.com/labeling/labeling-toolbox/images
-- V7 — https://www.v7labs.com/docs/the-review-stage
-- FiftyOne — https://docs.voxel51.com/user_guide/app.html
-- Scale/Nucleus — https://api-reference.scale.com/docs/pro-or-tasks-tab
+- Label Studio: https://labelstud.io/guide/labeling
+- CVAT: https://docs.cvat.ai/docs/annotation/annotation-editor/
+- Encord: https://docs.encord.com/platform-documentation/Annotate/annotate-label-editor/annotate-label-editor-annotate
+- Supervisely: https://docs.supervisely.com/labeling/labeling-toolbox/images
+- V7: https://www.v7labs.com/docs/the-review-stage
+- FiftyOne: https://docs.voxel51.com/user_guide/app.html
+- Scale/Nucleus: https://api-reference.scale.com/docs/pro-or-tasks-tab
 - Community: GitHub issues on `HumanSignal/label-studio`, `cvat-ai/cvat`,
   `HumanSignal/labelImg`; Label Studio Discourse; POTATO benchmark
   (arXiv 2212.08620).

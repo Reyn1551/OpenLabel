@@ -60,18 +60,18 @@ Playwright. At minimum, run `npm run lint`, `npm run test`, and `npm run build`.
 
 ## Project layout
 
-- `src/core/` — domain types, IndexedDB access, repositories, geometry, image
+- `src/core/`: domain types, IndexedDB access, repositories, geometry, image
   utilities, and dataset exporters. Keep this layer browser-light and testable.
-- `src/autolabel/` — the pure few-shot engine: feature grids, anchors, linear
+- `src/autolabel/`: the pure few-shot engine: feature grids, anchors, linear
   softmax, polygon refinement, training, validation, and prediction.
-- `src/workers/` — Web Worker entry points and message handling.
-- `src/features/` — feature-level React screens and state orchestrations.
-- `src/ui/` — reusable presentational primitives.
-- `src/lib/` — small cross-cutting helpers.
-- `src/locales/` — user-facing strings.
-- `src/styles/` — Tailwind entry point and design tokens.
-- `tests/unit/` — Vitest tests (jsdom environment).
-- `tests/e2e/` — Playwright browser tests.
+- `src/workers/`: Web Worker entry points and message handling.
+- `src/features/`: feature-level React screens and state orchestrations.
+- `src/ui/`: reusable presentational primitives.
+- `src/lib/`: small cross-cutting helpers.
+- `src/locales/`: user-facing strings.
+- `src/styles/`: Tailwind entry point and design tokens.
+- `tests/unit/`: Vitest tests (jsdom environment).
+- `tests/e2e/`: Playwright browser tests.
 
 Dependencies flow inward: `core` and `autolabel` must not import from `ui`,
 `features`, or React. The worker entry point may import from `core` and

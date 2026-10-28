@@ -1,4 +1,4 @@
-# Feature parity matrix — Roboflow → OpenLabel
+# Feature parity matrix: Roboflow → OpenLabel
 
 Ground truth gathered with REA static analysis of the shipped `app.roboflow.com`
 bundle plus the public documentation sitemap. Product behavior is inferred from

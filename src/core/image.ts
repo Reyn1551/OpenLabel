@@ -99,7 +99,7 @@ export function dct8(gray: Float32Array, size = 32): Float32Array {
   return out;
 }
 
-/** 64-bit perceptual hash as 16 hex chars; robust to scaling and recompression. */
+/** 64-bit perceptual hash as 16 hex chars; tolerant to scaling and recompression. */
 export async function computePHash(source: CanvasImageSource): Promise<string> {
   const gray = sampleGray(source);
   const coeffs = dct8(gray).slice(1); // drop DC

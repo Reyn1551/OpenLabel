@@ -41,7 +41,7 @@ docs(datasets): document YOLO-seg export layout
 2. `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z`.
 3. The `Publish npm package` workflow builds `packages/cli/dist`, stamps the CLI
    version from the tag, and publishes `openlabel` to npm with provenance. It
-   needs an `NPM_TOKEN` repository secret — an npm token with publish rights for
+   needs an `NPM_TOKEN` repository secret: an npm token with publish rights for
    the `openlabel` package.
 4. GitHub release notes are generated from commits since the previous tag.
 

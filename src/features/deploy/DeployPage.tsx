@@ -86,7 +86,7 @@ export function DeployPage() {
   };
 
   const snippet = model
-    ? `// OpenLabel portable model — ${model.classes.length} classes, ${model.dim}-dim descriptors\nconst model = await fetch('${safeFilename(project.name)}.model.json').then((r) => r.json());\n// score = softmax(model.weights · descriptor + model.bias)\n// See docs/AUTOLABEL.md for the descriptor definition and the full predictor.`
+    ? `// OpenLabel portable model: ${model.classes.length} classes, ${model.dim}-dim descriptors\nconst model = await fetch('${safeFilename(project.name)}.model.json').then((r) => r.json());\n// score = softmax(model.weights · descriptor + model.bias)\n// See docs/AUTOLABEL.md for the descriptor definition and the full predictor.`
     : '';
 
   if (model === undefined) {

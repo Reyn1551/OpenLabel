@@ -40,7 +40,7 @@ few-shot engine remain available offline after the first successful load.
 
 ## Module map
 
-### `src/core` — domain and persistence
+### `src/core`: domain and persistence
 
 | Module | Responsibility |
 | --- | --- |
@@ -58,7 +58,7 @@ few-shot engine remain available offline after the first successful load.
 | `settings.ts` | Theme, locale, density, motion preference, and the synchronous settings mirror used before first paint. |
 | `exporters.ts` | Dataset export pipeline: `buildExport` format switch, label/manifest serializers, optional preprocessed/augmented PNG rendering, warnings, and deterministic `zipExport`. |
 
-### `src/autolabel` — pure few-shot engine
+### `src/autolabel`: pure few-shot engine
 
 | Module | Responsibility |
 | --- | --- |
@@ -74,7 +74,7 @@ The engine has no React, DOM, IndexedDB, or network dependency. It is
 deterministic for a given dataset and seed, which is what makes tests and metric
 comparisons meaningful.
 
-### `src/workers` — execution boundary
+### `src/workers`: execution boundary
 
 `autolabel.worker.ts` is the only worker in the current architecture. It:
 
@@ -88,13 +88,13 @@ The worker is a responsiveness and memory boundary, not a security sandbox.
 
 ### UI layers
 
-- `src/features/` — feature screens and orchestration: project setup, image
+- `src/features/`: feature screens and orchestration: project setup, image
   import, annotation, auto-label, review, dataset versions, export.
-- `src/ui/` — reusable presentational primitives (buttons, dialogs, menus,
+- `src/ui/`: reusable presentational primitives (buttons, dialogs, menus,
   fields) built on Radix UI primitives and Tailwind CSS v4.
-- `src/lib/` — small browser, formatting, and download helpers.
-- `src/locales/` — user-facing strings.
-- `src/styles/` — Tailwind entry point and design tokens.
+- `src/lib/`: small browser, formatting, and download helpers.
+- `src/locales/`: user-facing strings.
+- `src/styles/`: Tailwind entry point and design tokens.
 
 Dependencies flow inward: `features` and `ui` may depend on `core`,
 `autolabel`, and `lib`; `core` and `autolabel` must not depend on React or UI
@@ -134,11 +134,11 @@ Database: `openlabel`, version `1`.
 | --- | --- | --- | --- |
 | `projects` | `id` | `by-updated` | Project documents. |
 | `images` | `id` | `by-project`, `by-batch` | Image metadata, dimensions, hashes, descriptors, split, counts. |
-| `blobs` | `id` | — | Original image blob and thumbnail blob. |
+| `blobs` | `id` | none | Original image blob and thumbnail blob. |
 | `annotations` | `id` | `by-image`, `by-project` | Human, auto, and imported annotations. |
 | `versions` | `id` | `by-project` | Frozen dataset versions. |
 | `models` | `id` | `by-project` | Serialized model bundles and metrics. |
-| `meta` | key | — | Small application metadata. |
+| `meta` | key | none | Small application metadata. |
 
 Rules:
 
@@ -282,7 +282,7 @@ Two transports share one frame format: a per-project `BroadcastChannel` for tabs
 in the same browser profile, and a manual-signaling `RTCPeerConnection` with no
 ICE servers for a device on the local network. Every connected replica
 announces its version vector every two seconds, which lets any peer relay what
-it has to a peer that is missing it — a star around the dataset owner is enough
+it has to a peer that is missing it. A star around the dataset owner is enough
 for a five-person team. No image bytes are transferred and nothing is uploaded.
 
 The studio bridge mirrors local edits into the log and writes merged remote state

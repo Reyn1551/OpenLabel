@@ -1,6 +1,6 @@
 # openlabel
 
-Local-first image annotation studio. Runs entirely in your browser — no account,
+Local-first image annotation studio. Runs entirely in your browser. No account,
 no server, no upload.
 
 ```bash
@@ -29,7 +29,7 @@ openlabel --host 0.0.0.0 --port 4173
 ```
 
 Each browser origin keeps its own data, so a second machine gets its own
-projects — that is the model, not a bug.
+projects. That is the model, not a bug.
 
 ## Install it once
 

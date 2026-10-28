@@ -7,15 +7,15 @@ is a static bundle that runs in the user's browser. That design removes a whole
 class of server-side risks, but it does not make the application automatically
 safe. The relevant trust boundaries are:
 
-1. **The browser origin** — application code and any script that manages to run
+1. **The browser origin**: application code and any script that manages to run
    in the origin can read the IndexedDB database, including images and labels.
-2. **Imported files** — images and any future project import are untrusted
+2. **Imported files**: images and any future project import are untrusted
    input. The browser's image decoders and the application's own parsers are the
    attack surface.
-3. **The static host and service worker** — a compromised host, a malicious
+3. **The static host and service worker**: a compromised host, a malicious
    update, or a cross-origin script can replace the application or exfiltrate
    local data.
-4. **The device and browser profile** — a shared, compromised, or
+4. **The device and browser profile**: a shared, compromised, or
    extension-heavy browser profile can access local data outside the
    application's control.
 
@@ -61,7 +61,7 @@ downloaded through the browser. Nothing is uploaded by the application.
   answer codes out of band. Anyone who receives a code can attempt to connect,
   so treat a code as a secret for the people you intend to include. The codes
   contain the local IP addresses of the creating device, and the connection uses
-  host candidates only — no STUN or TURN provider learns anything. Replicated
+  host candidates only; no STUN or TURN provider learns anything. Replicated
   operations are not signed per user: any paired peer can write annotations,
   claims, and review state, which is the same authority a teammate has in the
   app. Do not pair with untrusted peers.

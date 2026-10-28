@@ -18,7 +18,7 @@ export const BACKFILL_CHUNK = 200;
  *
  * Direct links only deliver what their two endpoints know. The periodic
  * announcement lets any peer relay what it has seen to a peer that is still
- * missing it, so five annotators do not need a full mesh — a star around whoever
+ * missing it, so five annotators do not need a full mesh; a star around whoever
  * has the invite codes is enough. Empty announcements are a few bytes.
  */
 export const HEARTBEAT_MS = 2000;

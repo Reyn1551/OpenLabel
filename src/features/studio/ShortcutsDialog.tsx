@@ -9,7 +9,7 @@ const SHORTCUTS: { keys: string; action: string }[] = [
   { keys: 'F', action: 'Freehand tool' },
   { keys: 'W', action: 'Smart select: click to flood-fill, drag to prompt with a box' },
   { keys: 'H or Space + drag', action: 'Pan' },
-  { keys: '1 – 9', action: 'Switch active class' },
+  { keys: '1-9', action: 'Switch active class' },
   { keys: 'Enter (canvas)', action: 'Keyboard placement / close polygon' },
   { keys: 'Arrows', action: 'Nudge selected annotation (Shift = 10 px)' },
   { keys: 'Ctrl/Cmd + Z', action: 'Undo' },

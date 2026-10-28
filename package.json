@@ -1,7 +1,7 @@
 {
   "name": "openlabel",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Local-first image annotation studio with few-shot auto-labeling. Annotate ten, label the rest.",
   "license": "Apache-2.0",

@@ -38,8 +38,8 @@ screens.
 | Asset | Before | After |
 | --- | --- | --- |
 | entry JS | 461 kB (147 kB gz) | 67 kB (22 kB gz) |
-| `vendor-react` (Preact compat + router) | — | 60 kB (22 kB gz) |
-| `vendor-ui` (Radix + floating-ui) | — | 131 kB (44 kB gz) |
+| `vendor-react` (Preact compat + router) | not split out | 60 kB (22 kB gz) |
+| `vendor-ui` (Radix + floating-ui) | not split out | 131 kB (44 kB gz) |
 | landing route chunk | in entry | 5.7 kB (2 kB gz), `modulepreload`ed |
 | entry CSS | 34 kB, render-blocking request | inlined into `index.html` (7 kB gz) |
 
@@ -82,6 +82,6 @@ route. Splitting the Radix primitives further (e.g. a per-control lazy chunk)
 would shrink the studio's initial fetch, at the cost of more round trips while
 the studio is opening. It is tracked as future work rather than shipped untested.
 
-Everything else the app ships with — the annotation studio, auto-label engine,
-exports, and collaboration — stays in route chunks and is not on the landing
+Everything else the app ships with (the annotation studio, auto-label engine,
+exports, and collaboration) stays in route chunks and is not on the landing
 critical path.

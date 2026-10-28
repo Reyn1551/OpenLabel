@@ -2,7 +2,7 @@
 //
 // Node environment on purpose: `BroadcastChannel` is a Node global and the
 // transport code is meant to be import-safe outside a browser. WebRTC itself is
-// not exercised here — jsdom/Node have no RTCPeerConnection and no real network,
+// not exercised here: jsdom/Node have no RTCPeerConnection and no real network,
 // so the tests only prove that importing `transport.ts` touches no browser
 // global and that constructing `WebRtcTransport` fails with a descriptive error.
 // The offer/answer flow needs two real browsers to be verified.

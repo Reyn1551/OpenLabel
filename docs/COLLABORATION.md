@@ -29,7 +29,7 @@ computed at import). That hash is the image key for every replicated fact:
 Classes have the same problem: local class ids are generated per browser. The
 replicated class identity is the normalized class name (`classKey`), and remote
 annotations are mapped back to a local class id (created on demand) when they
-arrive. Renaming a class therefore starts a new class identity — the UI treats
+arrive. Renaming a class therefore starts a new class identity; the UI treats
 renames as explicit project operations, not as silent merges.
 
 Images themselves are never transferred. If a peer does not have the bytes, it
@@ -73,9 +73,9 @@ few megabytes.
 
 Two transports implement the same frame format `{v, from, ops, vv}`:
 
-1. **Same browser profile.** A `BroadcastChannel` per project — tabs sync
-   immediately, no pairing. Identity is per tab (`sessionStorage`), because two
-   tabs share the database but are still two replicas.
+1. **Same browser profile.** A `BroadcastChannel` per project, so tabs sync
+   immediately with no pairing. Identity is per tab (`sessionStorage`), because
+   two tabs share the database but are still two replicas.
 2. **LAN pairing.** `RTCPeerConnection` with **no ICE servers**, so only host
    candidates are gathered and no third party learns anything. The offer and
    answer travel by copy/paste between the two people; there is no signaling
@@ -129,10 +129,11 @@ the board shows per-person counts on every replica.
 
 ## Verification
 
-- `tests/unit/collab-state.test.ts` — convergence under shuffled application
-  order, idempotency, stamp ordering, tombstones, version vectors.
-- `tests/unit/collab-sync.test.ts` — two replicas over a real `BroadcastChannel`,
-  including a late joiner backfilling from the log.
-- `tests/unit/collab-transport.test.ts` — invite-code codec and frame validation.
-- `tests/e2e/team.spec.ts` — two real tabs pair, split the work, converge on
-  review state, and pass an axe scan.
+- `tests/unit/collab-state.test.ts` covers convergence under shuffled
+  application order, idempotency, stamp ordering, tombstones, version vectors.
+- `tests/unit/collab-sync.test.ts` covers two replicas over a real
+  `BroadcastChannel`, including a late joiner backfilling from the log.
+- `tests/unit/collab-transport.test.ts` covers the invite-code codec and frame
+  validation.
+- `tests/e2e/team.spec.ts` covers two real tabs pairing, splitting the work,
+  converging on review state, and passing an axe scan.

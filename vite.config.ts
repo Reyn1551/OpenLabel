@@ -90,7 +90,7 @@ export default defineConfig(({ command }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'robots.txt', 'logo-light.svg', 'logo-dark.svg', 'og.png'],
       manifest: {
-        name: 'OpenLabel — local-first annotation studio',
+        name: 'OpenLabel: local-first annotation studio',
         short_name: 'OpenLabel',
         description:
           'Annotate a handful of images, then let few-shot auto-labeling finish the dataset. Runs entirely on your device.',

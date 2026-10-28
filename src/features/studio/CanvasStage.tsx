@@ -54,9 +54,9 @@ const HIT_SLOP = 6;
 
 /**
  * In-progress shapes are drawn on top of an arbitrary photo, so a single colour
- * can vanish on a dark or light background. The draft colour is hot magenta —
- * deliberately distinct from the teal accent so "not committed yet" is unambiguous
- * — and every draft stroke is drawn as a black + white + colour "sandwich": one of
+ * can vanish on a dark or light background. The draft colour is hot magenta,
+ * deliberately distinct from the teal accent so "not committed yet" is unambiguous,
+ * and every draft stroke is drawn as a black + white + colour "sandwich": one of
  * the two contrast halos is always strong against the pixels underneath, so the
  * dashed preview reads on any image.
  */

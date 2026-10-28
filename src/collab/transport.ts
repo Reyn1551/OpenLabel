@@ -112,7 +112,7 @@ function parseJsonFrame(raw: string): Frame | null {
 /**
  * Same-profile transport: every tab of this browser profile shares a
  * `BroadcastChannel` name. `BroadcastChannel` has no membership event, so
- * `onPeer` is never called here — presence is derived from the CRDT state and
+ * `onPeer` is never called here: presence is derived from the CRDT state and
  * the version vectors each frame carries.
  */
 export class BroadcastTransport implements Transport {

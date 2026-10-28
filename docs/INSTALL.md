@@ -1,7 +1,7 @@
 # Installation
 
 OpenLabel is a **static single-page app with no backend**. There is no database
-to provision and no data to upload — every project, image, and model lives in
+to provision and no data to upload: every project, image, and model lives in
 the browser's IndexedDB on the machine that created it. "Installing" means
 serving the built `dist/` over HTTP(S); the container is just a convenient,
 reproducible way to do that.
@@ -131,7 +131,7 @@ docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt ./caddy-root.
 ```
 
 For a quick test without trusting the CA, Chrome can be started with
-`--unsafely-treat-insecure-origin-as-stable="https://openlabel.local"` — testing
+`--unsafely-treat-insecure-origin-as-stable="https://openlabel.local"`, testing
 only, not a real deployment.
 
 ### Why HTTPS matters here
@@ -140,7 +140,7 @@ only, not a real deployment.
 and browsers will:
 
 - refuse to register the service worker (no offline / PWA install),
-- block `navigator.clipboard` (invite codes can't be copied — the app falls
+- block `navigator.clipboard` (invite codes can't be copied; the app falls
   back to a select-and-copy path and shows a hint),
 - in some browsers, restrict WebRTC.
 
@@ -177,11 +177,11 @@ npm run build          # writes dist/
 The nginx config used by the container (`docker/nginx.conf`) is a good reference
 for any host. The two things that matter:
 
-1. **SPA fallback** — unknown paths return `index.html`:
+1. **SPA fallback**: unknown paths return `index.html`:
    ```nginx
    location / { try_files $uri $uri/ /index.html; }
    ```
-2. **Caching** — hashed `/assets/*` are immutable for a year; `index.html` and
+2. **Caching**: hashed `/assets/*` are immutable for a year; `index.html` and
    `sw.js` are `no-cache`. The container sets this from a single `map` so the
    security headers are never dropped by a nested `add_header`.
 

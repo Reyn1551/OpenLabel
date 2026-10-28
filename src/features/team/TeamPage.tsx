@@ -318,7 +318,7 @@ export function TeamPage() {
                       <th scope="row" className="max-w-[28ch] truncate py-1.5 pr-3 font-normal">{meta.name}</th>
                       <td className="py-1.5 pr-3">
                         {owner === null ? (
-                          <span className="text-[var(--muted)]">—</span>
+                          <span className="text-[var(--muted)]">·</span>
                         ) : (
                           <Badge tone={owner === peer ? 'accent' : 'neutral'}>
                             {owner === peer ? t('team.you') : short(owner)}

@@ -12,7 +12,7 @@
 
 **A local-first image annotation studio with few-shot auto-labeling.**
 Annotate ten examples, train a small model in your browser, label the rest, and
-export a dataset — without an account, a server, or an upload.
+export a dataset, without an account, a server, or an upload.
 
 OpenLabel is an early-stage (0.1.0) open-source project. The workflow is
 usable, but the data schema and internal APIs may change before 1.0.
@@ -64,7 +64,7 @@ npx openlabel
 ```
 
 That's the whole install. It serves the app at <http://localhost:4173> and opens
-your browser. No account, no server, no upload — your projects live in that
+your browser. No account, no server, no upload: your projects live in that
 browser's IndexedDB, so come back to the same URL. Needs Node ≥ 20.
 
 Serve to other machines on your network: `npx openlabel --host 0.0.0.0`.
@@ -82,7 +82,7 @@ docker run -d --name openlabel --restart unless-stopped -p 8080:8080 \
 ```
 
 Open <http://localhost:8080>. For a team or a LAN/public hostname with HTTPS,
-use `docker compose` — see [docs/INSTALL.md](docs/INSTALL.md).
+use `docker compose`; see [docs/INSTALL.md](docs/INSTALL.md).
 
 ### Develop
 
@@ -222,7 +222,7 @@ fallback); everything else is TypeScript.
    approximations, eight unsigned gradient-orientation bins, and gradient
    magnitude. Summed-area tables make any rectangle's cell averages O(1).
 3. A proposal is described by a **4×4 grid of sub-cells**, each contributing 12
-   values, plus log aspect ratio and log relative area — a **194-dimensional**
+   values, plus log aspect ratio and log relative area: a **194-dimensional**
    L2-normalized descriptor.
 4. Positive windows are annotated boxes plus four small jitters; negatives are
    random anchor-sized windows that do not overlap positives. A linear softmax
@@ -415,7 +415,7 @@ with an explicit error rather than silently degrading.
   STUN or TURN servers, so only the two paired devices exchange traffic; the
   invite code (SDP) contains the local IP addresses of the device that created
   it, so share it only with the people you would tell those addresses to. Only
-  annotation metadata, claims, and review state are replicated — image bytes
+  annotation metadata, claims, and review state are replicated; image bytes
   stay on the devices that already have them.
 
 See [SECURITY.md](SECURITY.md) for the threat model and reporting process.

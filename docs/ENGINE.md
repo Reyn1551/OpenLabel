@@ -2,7 +2,7 @@
 
 OpenLabel's few-shot detector has one pixel-bound stage: turning an image into
 cell statistics and turning a rectangle into a 50-value descriptor. Everything
-else — the linear softmax, NMS, box fusion, metrics — is small and stays in
+else (the linear softmax, NMS, box fusion, metrics) is small and stays in
 TypeScript.
 
 That pixel stage is written twice:
@@ -40,13 +40,13 @@ Two changes, measured with `npx vite-node scripts/bench-engine.ts` on a
 | Grid build, WebAssembly | 70.0 ms | 20.9 ms |
 | 5 000 descriptors, JavaScript | 17.7 ms | 19.0 ms |
 | 5 000 descriptors, WebAssembly | 24.3 ms | 16.3 ms |
-| Module size | — | 23 KiB |
+| Module size | n/a | 23 KiB |
 
 The first win was **algorithmic, not linguistic**. The original code called
 `Math.atan2` and `Math.hypot` once per pixel just to pick one of eight
 orientation bins. Neither has a WebAssembly instruction, so the module was
 slower than V8's intrinsics. Replacing the angle computation with comparisons
-against `tan(k·π/8)` — verified equivalent over three million random gradients —
+against `tan(k·π/8)` (verified equivalent over three million random gradients)
 cut the JavaScript path by 44% and made the wasm path viable. Magnitude uses
 `sqrt` (a hardware instruction) instead of `hypot`.
 
@@ -55,13 +55,13 @@ index in the pixel pass and the summed-area lookup is clamped by construction.
 
 WebAssembly is now ~1.2× faster than the JavaScript reference for both stages.
 That is a modest margin on a fast desktop and a larger one on engines with a
-weaker JIT — which is the case the engine exists for.
+weaker JIT, which is the case the engine exists for.
 
 ## Memory: one image at a time
 
 Training used to build a feature grid for **every** image and keep them all
 while sampling descriptors. A grid is ~3.6 MB per level and there are two levels,
-so 100 images held roughly 700 MB — enough to kill a phone or a 4 GB laptop.
+so 100 images held roughly 700 MB, enough to kill a phone or a 4 GB laptop.
 
 `buildDescriptorSamples` and the validation folds now build a grid, sample it,
 and release it (`releaseGrid`, which frees the engine handle). Peak memory is one

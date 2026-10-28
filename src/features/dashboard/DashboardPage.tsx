@@ -58,7 +58,7 @@ export function DashboardPage() {
     setLoadingDemo(true);
     try {
       const project = await createProject({
-        name: 'Demo — industrial parts',
+        name: 'Demo: industrial parts',
         type: 'object-detection',
         classes: [...SAMPLE_CLASSES],
         description: 'Synthetic parts generated in the browser. Annotate more, then train Auto Label.',

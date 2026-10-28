@@ -492,7 +492,7 @@ function buildRecommendations(input: {
     add(`Collect at least ${project.autoLabel.minAnnotations} annotations to unlock few-shot auto-labeling.`);
   }
   if (recommendations.length === 0) {
-    add('The dataset looks healthy — export a version and train your first model.');
+    add('The dataset looks healthy. Export a version and train your first model.');
   }
   return recommendations;
 }

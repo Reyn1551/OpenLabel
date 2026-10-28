@@ -1,13 +1,24 @@
 {
   "name": "openlabel",
-  "version": "0.1.0",
-  "description": "Local-first image annotation studio. Runs entirely in your browser — `npx openlabel`.",
+  "version": "0.1.1",
+  "description": "Local-first image annotation studio. Runs entirely in your browser; start it with `npx openlabel`.",
   "license": "Apache-2.0",
   "type": "module",
-  "bin": { "openlabel": "bin/openlabel.js" },
-  "files": ["bin/", "dist/", "README.md", "LICENSE"],
-  "engines": { "node": ">=20.0.0" },
-  "dependencies": { "sirv": "^3.0.2" },
+  "bin": {
+    "openlabel": "bin/openlabel.js"
+  },
+  "files": [
+    "bin/",
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "sirv": "^3.0.2"
+  },
   "keywords": [
     "annotation",
     "image-annotation",
