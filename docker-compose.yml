@@ -1,4 +1,4 @@
-# OpenLabel — self-hosted.
+# OpenLabel, self-hosted.
 #
 # Default: `docker compose up -d` serves http://localhost:8080 (a secure context,
 # so the service worker, clipboard, and PWA install all work).
@@ -6,7 +6,7 @@
 # LAN / public hostname: `OPENLABEL_HOST=labels.example.com docker compose
 # --profile tls up -d` runs Caddy in front with automatic HTTPS. For a LAN-only
 # name with no public DNS, use docker/Caddyfile.internal (`tls internal`) and
-# trust Caddy's local CA on each client — otherwise browsers block the service
+# trust Caddy's local CA on each client, otherwise browsers block the service
 # worker and clipboard on a non-secure origin.
 
 services:

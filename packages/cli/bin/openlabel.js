@@ -46,7 +46,7 @@ if (!Number.isInteger(port) || port < 0 || port > 65535) {
   process.exit(1);
 }
 if (!existsSync(join(DIST, 'index.html'))) {
-  console.error('openlabel: bundled dist/ is missing — reinstall the package.');
+  console.error('openlabel: bundled dist/ is missing. Reinstall the package.');
   process.exit(1);
 }
 
@@ -76,7 +76,7 @@ server.on('error', (err) => {
 Your projects are stored per origin (http://localhost:${port}); switching ports looks empty.
 Free the port, or reuse one you already use:  openlabel --port 5173`);
   } else if (err.code === 'EACCES') {
-    console.error(`openlabel: cannot bind ${values.host}:${port} — try --port 9173.`);
+    console.error(`openlabel: cannot bind ${values.host}:${port}; try --port 9173.`);
   } else {
     console.error(`openlabel: ${err.message}`);
   }
