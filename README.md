@@ -14,7 +14,7 @@
 Annotate ten examples, train a small model in your browser, label the rest, and
 export a dataset, without an account, a server, or an upload.
 
-OpenLabel is an early-stage (0.3.0) open-source project. The workflow is
+OpenLabel is an early-stage (0.4.0) open-source project. The workflow is
 usable, but the data schema and internal APIs may change before 1.0.
 
 ---

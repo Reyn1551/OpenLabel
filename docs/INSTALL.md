@@ -92,14 +92,14 @@ docker compose up -d          # http://localhost:8080
 `latest` for a stable install:
 
 ```bash
-OPENLABEL_TAG=0.3.0 docker compose up -d
+OPENLABEL_TAG=0.4.0 docker compose up -d
 ```
 
 ### Upgrading and rolling back
 
 ```bash
 docker compose pull && docker compose up -d     # upgrade
-docker tag ghcr.io/reyn1551/openlabel:0.3.0 openlabel:rollback
+docker tag ghcr.io/reyn1551/openlabel:0.4.0 openlabel:rollback
 OPENLABEL_TAG=rollback docker compose up -d     # roll back
 ```
 
