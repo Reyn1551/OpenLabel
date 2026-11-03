@@ -180,7 +180,7 @@ export function SettingsPage() {
           <dl className="grid gap-2 text-xs sm:grid-cols-2">
             <div>
               <dt className="text-[var(--muted)]">{t('settings.version')}</dt>
-              <dd className="font-mono">0.1.0</dd>
+              <dd className="font-mono">{__APP_VERSION__}</dd>
             </div>
             <div>
               <dt className="text-[var(--muted)]">{t('app.name')}</dt>
