@@ -3,7 +3,8 @@ import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, sep } from 'node:path';
+import { createInterface } from 'node:readline/promises';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import sirv from 'sirv';
@@ -12,20 +13,24 @@ const here = dirname(fileURLToPath(import.meta.url));
 const DIST = join(here, '..', 'dist');
 const pkg = JSON.parse(readFileSync(join(here, '..', 'package.json'), 'utf8'));
 
-const { values } = parseArgs({
+const { values, positionals } = parseArgs({
   options: {
     port: { type: 'string', short: 'p' },
     host: { type: 'string', default: '0.0.0.0' },
     'no-open': { type: 'boolean', default: false },
+    check: { type: 'boolean', default: false },
+    yes: { type: 'boolean', short: 'y', default: false },
     version: { type: 'boolean', short: 'v' },
     help: { type: 'boolean', short: 'h' },
   },
+  allowPositionals: true,
 });
 
 if (values.help) {
   console.log(`openlabel ${pkg.version}
 
 Usage: openlabel [options]
+       openlabel update [--check] [--yes]
 
   -p, --port <n>   Port to listen on (default: 4173, else the next free one)
       --host <h>   Host to bind (default: 0.0.0.0, so paired devices can reach it;
@@ -34,12 +39,26 @@ Usage: openlabel [options]
   -v, --version    Print version
   -h, --help       Print this help
 
+  openlabel update          Check npm and install the newest release
+      --check               Report the newest release without installing
+  -y, --yes                 Install without asking (for scripts)
+
 Your projects live in this browser origin. Use the same port to see them again.`);
   process.exit(0);
 }
 if (values.version) {
   console.log(pkg.version);
   process.exit(0);
+}
+
+const command = positionals[0] ?? 'serve';
+if (command === 'update') {
+  await runUpdate();
+  process.exit(process.exitCode ?? 0);
+}
+if (command !== 'serve') {
+  console.error(`openlabel: unknown command "${command}". Try: openlabel --help`);
+  process.exit(1);
 }
 
 const explicitPort = values.port !== undefined;
@@ -315,6 +334,111 @@ function openBrowser(url) {
     spawn(cmd, args, { stdio: 'ignore', detached: true }).on('error', () => {}).unref();
   } catch {
     // No browser available; the URL is already printed.
+  }
+}
+
+/**
+ * Orders dotted versions by major, minor, patch, then pre-release.
+ *
+ * This is not full semver: the CLI only needs "is the registry newer than me",
+ * and it never compares build metadata or ranges.
+ */
+function compareVersions(left, right) {
+  const core = (value) => value.replace(/^v/u, '').split('-')[0].split('.').map((part) => Number.parseInt(part, 10) || 0);
+  const a = core(left);
+  const b = core(right);
+  for (let index = 0; index < 3; index += 1) {
+    const difference = (a[index] ?? 0) - (b[index] ?? 0);
+    if (difference !== 0) return difference;
+  }
+  const prerelease = (value) => (value.includes('-') ? 1 : 0);
+  return prerelease(right) - prerelease(left);
+}
+
+/** Reads the published version from the registry, so no npm install is needed. */
+async function publishedVersion() {
+  const response = await fetch('https://registry.npmjs.org/openlabel/latest', {
+    headers: { accept: 'application/json' },
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!response.ok) throw new Error(`the npm registry answered ${response.status}`);
+  const body = await response.json();
+  if (typeof body.version !== 'string') throw new Error('the npm registry returned no version');
+  return body.version;
+}
+
+function installCommand(version) {
+  return ['install', '--global', `openlabel@${version}`, '--no-fund', '--no-audit'];
+}
+
+function runInstall(version) {
+  const args = installCommand(version);
+  console.log(`  npm ${args.join(' ')}\n`);
+  return new Promise((resolve) => {
+    const child = spawn(process.platform === 'win32' ? 'npm.cmd' : 'npm', args, { stdio: 'inherit' });
+    child.on('error', () => {
+      console.error(`openlabel update: could not run npm.
+
+Install it yourself:  npm install --global openlabel@${version}`);
+      resolve(1);
+    });
+    child.on('exit', (code, signal) => resolve(code ?? (signal ? 1 : 0)));
+  });
+}
+
+/**
+ * `openlabel update`: checks the registry, then upgrades the global install.
+ *
+ * Nothing is fetched or installed unless a newer release exists, and an
+ * interactive run asks before changing the machine's global packages.
+ */
+async function runUpdate() {
+  console.log(`  openlabel ${pkg.version} · checking npm for a newer release…`);
+  let latest;
+  try {
+    latest = await publishedVersion();
+  } catch (error) {
+    console.error(`openlabel update: cannot check the npm registry (${error.message}).`);
+    process.exitCode = 1;
+    return;
+  }
+
+  if (compareVersions(latest, pkg.version) <= 0) {
+    console.log(`  You are on the latest release (${pkg.version}).`);
+    return;
+  }
+  console.log(`  ${latest} is available; you have ${pkg.version}.`);
+  if (values.check) {
+    console.log(`\n  Install it with:  npm install --global openlabel@${latest}`);
+    return;
+  }
+
+  if (!values.yes) {
+    if (!process.stdin.isTTY) {
+      console.log(`\n  Install it with:  npm install --global openlabel@${latest}`);
+      return;
+    }
+    const readline = createInterface({ input: process.stdin, output: process.stdout });
+    const answer = await readline.question(`  Install ${latest} now? [Y/n] `);
+    readline.close();
+    if (/^n(o)?$/iu.test(answer.trim())) {
+      console.log('  Cancelled. Nothing changed.');
+      return;
+    }
+  }
+
+  console.log('');
+  const code = await runInstall(latest);
+  if (code !== 0) {
+    console.error(`\nopenlabel update: npm exited with ${code}. The installed version is unchanged.
+Retry with:  npm install --global openlabel@${latest}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  console.log(`\n  Updated to ${latest}. Restart any running openlabel to load it.`);
+  if (here.includes(`${sep}_npx${sep}`)) {
+    console.log('  You started this copy through npx, which keeps its own cache.\n  Use `npm install --global openlabel` so the command updates in place.');
   }
 }
 

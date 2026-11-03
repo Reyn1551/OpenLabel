@@ -14,10 +14,12 @@ that browser's IndexedDB, so come back to the same URL.
 ## Options
 
 ```
-openlabel [options]
+Usage: openlabel [options]
+       openlabel update [--check] [--yes]
 
   -p, --port <n>   Port to listen on (default: 4173, else the next free one)
-      --host <h>   Host to bind (default: 127.0.0.1)
+      --host <h>   Host to bind (default: 0.0.0.0, so paired devices can reach it;
+                   use 127.0.0.1 to keep it on this machine only)
       --no-open    Do not open the browser
   -v, --version    Print version
   -h, --help       Print this help
@@ -44,6 +46,19 @@ openlabel
 
 The `-g` flag is required. Without it, npm links the binary into the local
 `node_modules/.bin`, which your shell does not see.
+
+## Updating
+
+```bash
+openlabel update
+```
+
+This asks the npm registry for the newest release, prints what it found, and
+installs it with `npm install -g openlabel@<version>` after one confirmation.
+`openlabel update --check` reports without installing, and `--yes` skips the
+question for scripts. A running `openlabel` keeps serving the old code until it
+is restarted. If the package was installed by a package manager other than npm,
+or without `-g`, run the install command the update prints instead.
 
 ## Ports
 

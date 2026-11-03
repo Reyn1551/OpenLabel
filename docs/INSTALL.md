@@ -32,6 +32,8 @@ npx openlabel
   (each browser origin keeps its own data).
 - `npx openlabel --port 5173` if 4173 is taken.
 - Install it once as a command: `npm install -g openlabel` then `openlabel`.
+- Keep a global install current: `openlabel update` (see
+  [packages/cli/README.md](../packages/cli/README.md)).
 
 Requires Node ≥ 20. For hosts without Node, or air-gapped/regulated
 environments, use the container below.
@@ -90,14 +92,14 @@ docker compose up -d          # http://localhost:8080
 `latest` for a stable install:
 
 ```bash
-OPENLABEL_TAG=0.1.0 docker compose up -d
+OPENLABEL_TAG=0.3.0 docker compose up -d
 ```
 
 ### Upgrading and rolling back
 
 ```bash
 docker compose pull && docker compose up -d     # upgrade
-docker tag ghcr.io/reyn1551/openlabel:0.1.0 openlabel:rollback
+docker tag ghcr.io/reyn1551/openlabel:0.3.0 openlabel:rollback
 OPENLABEL_TAG=rollback docker compose up -d     # roll back
 ```
 
