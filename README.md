@@ -14,7 +14,7 @@
 Annotate ten examples, train a small model in your browser, label the rest, and
 export a dataset, without an account, a server, or an upload.
 
-OpenLabel is an early-stage (0.1.0) open-source project. The workflow is
+OpenLabel is an early-stage (0.3.0) open-source project. The workflow is
 usable, but the data schema and internal APIs may change before 1.0.
 
 ---
@@ -45,13 +45,21 @@ that turns a handful of labels into a reviewable dataset.
 
 ## Screenshots
 
+All shots are the dark theme on the demo dataset, captured from the current
+build. Regenerate them after a UI change with `node scripts/readme-shots.mjs`
+(needs the dev server on port 4173).
+
 | Studio + Auto Label | Dataset health |
 | --- | --- |
 | ![Annotation studio with few-shot suggestions](docs/assets/studio-autolabel.png) | ![Dataset health report](docs/assets/health.png) |
 
-| Projects | Export |
+| Team pairing and work split | Projects |
 | --- | --- |
-| ![Project dashboard](docs/assets/dashboard.png) | ![Export dialog](docs/assets/export.png) |
+| ![Team page with paired devices and the work split](docs/assets/team.png) | ![Project dashboard](docs/assets/dashboard.png) |
+
+| Export | Run your model |
+| --- | --- |
+| ![Export dialog](docs/assets/export.png) | ![Model inference with latency](docs/assets/deploy.png) |
 
 ---
 
@@ -78,6 +86,17 @@ openlabel
 The package ships a `bin` entry, so `-g` puts `openlabel` on your PATH. Without
 `-g`, npm only links the binary into the local `node_modules/.bin`, which your
 shell does not see.
+
+Keep it current:
+
+```bash
+openlabel update
+```
+
+That asks npm for the newest release, prints what it found, and after one
+confirmation installs it. `openlabel update --check` reports without installing,
+and `--yes` skips the question for scripts. The running `openlabel` keeps
+serving the old code until you restart it.
 
 Serve to other machines on your network: `openlabel --host 0.0.0.0`.
 
@@ -157,7 +176,9 @@ flowchart LR
    pass; keypoint projects place learned layout priors.
 6. **Review.** Every prediction carries a score. Accepted predictions are
    stored as auto-labeled annotations; corrections become human labels and
-   training data for the next run.
+   training data for the next run. When several people share the project, the
+   Team page splits the images between devices and the work converges without a
+   server.
 7. **Repeat or export.** Retrain when the metrics or the review queue warrants
    it, freeze a dataset version with its split, preprocessing, and augmentation
    settings, then export in a standard format.
@@ -172,7 +193,9 @@ flowchart LR
   skeletons, and image-level classification.
 - **Annotation workspace.** Zoomable canvas, box/polygon/freehand/wand tools,
   class colors, per-class keypoint skeletons, undo/redo, and keyboard placement
-  and nudging.
+  and nudging. Resize handles win over the active tool so a fresh box can be
+  fixed without switching tools, the inspector accepts exact X/Y/W/H, and
+  drawing tools show full-length crosshair guides for alignment.
 - **Batch import.** Thumbnails, dimensions, MIME type, perceptual hashes for
   duplicate detection, and compact image descriptors.
 - **Deterministic splits.** Default 70/20/10 split with per-image overrides and
@@ -191,10 +214,20 @@ flowchart LR
 - **Native-speed features.** The pixel-bound stage runs in a 23 KiB
   Rust/WebAssembly module, with the TypeScript implementation kept as the
   reference and fallback. See [docs/ENGINE.md](docs/ENGINE.md).
-- **Offline team collaboration.** Pair devices with an invite link, claim a slice
-  of the images, and let annotations and pixels converge without any server.
-  Devices that are never online together can still exchange a sync file. See
+- **Offline team collaboration.** Pair a device with a one-click invite link
+  (the room lives on your own `openlabel` instance, so no third party sees it),
+  exchange manual codes across networks, or merge a sync file when two devices
+  are never online together. Paired devices exchange images over the same
+  connection, chunked with retries and verified against each SHA-256, so a
+  joining device ends up with a complete local copy. See
   [docs/COLLABORATION.md](docs/COLLABORATION.md).
+- **A shared work split.** Team members claim images in batches, release them,
+  and mark them done. Claims live in the replicated state, not a server, so the
+  same counts converge on every device. Joined projects stay on the home page
+  with a Rejoin action.
+- **Model at hand.** The Run your model page scores any image with the trained
+  model, reports latency, and downloads the model as plain JSON with a scoring
+  snippet, so the few-shot predictor can be reproduced outside the app.
 - **Lighthouse 100.** Performance, accessibility, best practices, and SEO score
   100 on the mobile and desktop presets. The UI uses the React API through
   Preact's compatibility layer to keep the framework payload at 22 kB gzip. See
@@ -293,9 +326,10 @@ in-app shortcut sheet is the source of truth if a binding changes.
 | Polygon tool | `P` |
 | Keypoint tool | `K` |
 | Freehand tool | `F` |
-| Magic-wand tool | `W` |
+| Smart select (flood fill, box prompt) | `W` |
 | Pan tool | `H` |
 | Class 1–9 | `1` … `9` |
+| Previous / next image | `A` / `D`, or `[` / `]` |
 | Temporarily pan | Hold `Space` while dragging |
 | Zoom in / out | `+` / `-`, or mouse wheel / trackpad pinch |
 | Fit image to viewport | `0` |
@@ -478,7 +512,7 @@ desktop tool where the platform allows it.
 | Zero-upload | yes | no | yes |
 | Auto-labeling | no | hosted model | on-device few-shot model |
 | Folder import/export | native | n/a | File System Access API (Chromium) with upload fallback |
-| Multi-user review | no | yes | not yet (roadmap) |
+| Multi-user review | no | yes | offline peer pairing, claim and mark-done split |
 | Accessibility | varies | varies | WCAG 2.2 AA target, tested with axe + keyboard E2E |
 | Updates | manual | automatic | automatic, versioned by the service worker |
 
